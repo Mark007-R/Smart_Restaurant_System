@@ -63,6 +63,28 @@ def build_or_get_rag(reviews_texts, docs_texts=None):
     return rag
 
 
+# ---------------- IMAGE UTILITY ----------------
+def get_restaurant_image(restaurant_name):
+    """Generate unique restaurant image based on restaurant name"""
+    # List of food/restaurant related Unsplash search terms
+    food_terms = [
+        "restaurant-interior", "fine-dining", "food-plating", "restaurant-table",
+        "indian-food", "chinese-food", "italian-food", "mexican-food",
+        "cafe-interior", "bar-restaurant", "outdoor-dining", "restaurant-chef",
+        "gourmet-food", "street-food", "bakery", "pizza-restaurant"
+    ]
+    
+    # Use restaurant name to generate consistent but varied index
+    hash_value = sum(ord(c) for c in restaurant_name)
+    term_index = hash_value % len(food_terms)
+    seed_value = hash_value % 1000
+    
+    search_term = food_terms[term_index]
+    
+    # Generate Unsplash URL with search term and seed for consistency
+    return f"https://source.unsplash.com/800x600/?{search_term}&sig={seed_value}"
+
+
 # ---------------- CSV PROCESSING UTILITIES ----------------
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -367,8 +389,8 @@ def index():
     for r in restaurants_data:
         name = r['name']
         if name not in unique_restaurants:
-            # Add default photo
-            r['photo'] = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4"
+            # Add unique photo based on restaurant name
+            r['photo'] = get_restaurant_image(name)
             unique_restaurants[name] = r
     
     restaurants = list(unique_restaurants.values())
@@ -380,9 +402,16 @@ def index():
 
 
 # ---------------- ANALYZE ----------------
-@app.route("/analyze", methods=["POST"])
+@app.route("/analyze", methods=["GET", "POST"])
 def analyze():
-    restaurant = request.form.get("restaurant_name", "").strip()
+    """Handle both GET and POST requests for analyze"""
+    if request.method == "GET":
+        # Handle GET request with query parameter
+        restaurant = request.args.get("restaurant", "").strip()
+    else:
+        # Handle POST request with form data
+        restaurant = request.form.get("restaurant_name", "").strip()
+    
     if not restaurant:
         flash("Please provide a restaurant name.", "error")
         return redirect(url_for("index"))
@@ -391,8 +420,8 @@ def analyze():
     from_uploaded_docs = []
     source = "database"
 
-    # Priority 1: Uploaded file
-    if "datafile" in request.files:
+    # Priority 1: Uploaded file (only for POST requests)
+    if request.method == "POST" and "datafile" in request.files:
         f = request.files["datafile"]
         if f and f.filename and allowed_file(f.filename):
             filename = secure_filename(f.filename)
@@ -440,8 +469,8 @@ def analyze():
             source = "database"
             flash(f"✓ Found {len(reviews_data)} reviews in database", "info")
 
-    # Priority 4: Scraping fallback
-    if not reviews_data:
+    # Priority 4: Scraping fallback (only if explicitly enabled in POST)
+    if not reviews_data and request.method == "POST":
         try_scrape = request.form.get("try_scrape") == "on"
         if try_scrape:
             scraped = scrape_generic_reviews(restaurant, max_reviews=20)

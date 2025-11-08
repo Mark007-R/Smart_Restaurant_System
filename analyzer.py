@@ -75,18 +75,121 @@ def categorize_complaints(text):
 def plot_to_base64(fig):
     """Convert matplotlib figure to base64 string for HTML embedding"""
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+    fig.savefig(buf, format='png', bbox_inches='tight', dpi=120, facecolor='white')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     plt.close(fig)
     return f"data:image/png;base64,{img_base64}"
 
+def get_restaurant_info(restaurant_name):
+    """
+    Get restaurant information from datasets
+    Returns dict with restaurant details
+    """
+    info = {
+        'name': restaurant_name,
+        'rating': None,
+        'address': None,
+        'cuisines': None,
+        'cost': None,
+        'location': None,
+        'description': None
+    }
+    
+    dataset_files = {
+        "mumbaires.csv": {
+            "name_col": "Restaurant Name",
+            "rating_col": "Rating",
+            "address_col": "Address",
+            "price_col": "Price Level"
+        },
+        "zomato.csv": {
+            "name_col": "name",
+            "rating_col": "rate",
+            "address_col": "address",
+            "location_col": "location",
+            "cuisines_col": "cuisines",
+            "cost_col": "approx_cost(for two people)"
+        },
+        "zomato2.csv": {
+            "name_col": "Restaurant_Name",
+            "rating_col": "Avg_Rating_Restaurant",
+            "location_col": "Place_Name",
+            "city_col": "City",
+            "cuisine_col": "Cuisine"
+        }
+    }
+    
+    for fname, config in dataset_files.items():
+        fpath = os.path.join(DATASET_FOLDER, fname)
+        if not os.path.exists(fpath):
+            continue
+        
+        try:
+            df = pd.read_csv(fpath, encoding="utf-8", on_bad_lines="skip")
+            df.columns = df.columns.str.strip()
+            
+            name_col = config["name_col"]
+            if name_col not in df.columns:
+                continue
+            
+            df_filtered = df[df[name_col].astype(str).str.contains(
+                restaurant_name, case=False, na=False, regex=False
+            )]
+            
+            if not df_filtered.empty:
+                row = df_filtered.iloc[0]
+                
+                # Extract available information
+                if 'rating_col' in config and config['rating_col'] in df.columns:
+                    rating = row.get(config['rating_col'])
+                    if pd.notna(rating):
+                        info['rating'] = rating
+                
+                if 'address_col' in config and config['address_col'] in df.columns:
+                    address = row.get(config['address_col'])
+                    if pd.notna(address):
+                        info['address'] = address
+                
+                if 'cuisines_col' in config and config['cuisines_col'] in df.columns:
+                    cuisines = row.get(config['cuisines_col'])
+                    if pd.notna(cuisines):
+                        info['cuisines'] = cuisines
+                
+                if 'cost_col' in config and config['cost_col'] in df.columns:
+                    cost = row.get(config['cost_col'])
+                    if pd.notna(cost):
+                        info['cost'] = cost
+                
+                if 'location_col' in config and config['location_col'] in df.columns:
+                    location = row.get(config['location_col'])
+                    if pd.notna(location):
+                        info['location'] = location
+                
+                if 'cuisine_col' in config and config['cuisine_col'] in df.columns:
+                    cuisine = row.get(config['cuisine_col'])
+                    if pd.notna(cuisine):
+                        info['cuisines'] = cuisine
+                
+                # If we found data, break
+                if info['rating'] or info['address']:
+                    break
+        
+        except Exception as e:
+            print(f"Error reading {fname}: {e}")
+    
+    return info
+
 def generate_visualizations(reviews):
     """
-    Generate comprehensive visualizations and return as base64 encoded images
-    Returns dict with image keys
+    Generate comprehensive visualizations with better styling and spacing
+    Returns dict with image keys and metadata
     """
     images = {}
+    
+    # Set professional style
+    plt.style.use('seaborn-v0_8-darkgrid')
+    sns.set_palette("husl")
     
     counts = {}
     sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
@@ -121,81 +224,121 @@ def generate_visualizations(reviews):
             except:
                 pass
     
-    # 1. Complaint Category Bar Chart
-    if counts:
-        df_counts = pd.DataFrame(list(counts.items()), columns=["Category", "Count"])
-        df_counts = df_counts.sort_values("Count", ascending=False)
-        
-        fig, ax = plt.subplots(figsize=(12, 6))
-        bars = sns.barplot(data=df_counts, x="Category", y="Count", palette="viridis", ax=ax)
-        ax.set_title("Complaint Frequency by Category", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Category", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Count", fontsize=12, fontweight='bold')
-        plt.xticks(rotation=45, ha='right')
-        
-        # Add value labels on bars
-        for container in ax.containers:
-            ax.bar_label(container, fontsize=10)
-        
-        plt.tight_layout()
-        images['category_bar'] = plot_to_base64(fig)
+    # Get restaurant info for description
+    if reviews:
+        restaurant_name = reviews[0].restaurant
+        restaurant_info = get_restaurant_info(restaurant_name)
+        images['restaurant_info'] = restaurant_info
     
-    # 2. Sentiment Pie Chart
+    # 1. Sentiment Overview Card (Combined Pie + Bar)
     if any(sentiments.values()):
-        fig, ax = plt.subplots(figsize=(9, 7))
-        colors = ['#66c2a5', '#fc8d62', '#8da0cb']
-        explode = (0.05, 0.05, 0.05)
+        fig = plt.figure(figsize=(16, 7))
+        gs = fig.add_gridspec(1, 2, hspace=0.3, wspace=0.3)
         
-        wedges, texts, autotexts = ax.pie(
+        # Pie chart
+        ax1 = fig.add_subplot(gs[0, 0])
+        colors = ['#2ecc71', '#e74c3c', '#95a5a6']
+        explode = (0.08, 0.08, 0.08)
+        
+        wedges, texts, autotexts = ax1.pie(
             sentiments.values(), 
             labels=sentiments.keys(), 
             autopct='%1.1f%%',
             startangle=90, 
             colors=colors,
             explode=explode,
-            shadow=True
+            shadow=True,
+            textprops={'fontsize': 13, 'weight': 'bold'}
         )
         
         for autotext in autotexts:
             autotext.set_color('white')
-            autotext.set_fontsize(12)
+            autotext.set_fontsize(13)
             autotext.set_fontweight('bold')
         
-        ax.set_title("Sentiment Distribution", fontsize=16, fontweight='bold', pad=20)
-        images['sentiment_pie'] = plot_to_base64(fig)
-    
-    # 3. Sentiment Bar Chart
-    if any(sentiments.values()):
-        df_sent = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
+        ax1.set_title("Sentiment Distribution", fontsize=18, fontweight='bold', pad=25)
         
-        fig, ax = plt.subplots(figsize=(9, 6))
-        bars = sns.barplot(data=df_sent, x="Sentiment", y="Count", palette="Set2", ax=ax)
-        ax.set_title("Review Count by Sentiment", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Sentiment", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Count", fontsize=12, fontweight='bold')
+        # Bar chart
+        ax2 = fig.add_subplot(gs[0, 1])
+        df_sent = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
+        bars = ax2.bar(df_sent["Sentiment"], df_sent["Count"], 
+                       color=colors, edgecolor='black', linewidth=1.5, alpha=0.85)
+        
+        ax2.set_title("Review Count by Sentiment", fontsize=18, fontweight='bold', pad=25)
+        ax2.set_xlabel("Sentiment", fontsize=14, fontweight='bold')
+        ax2.set_ylabel("Count", fontsize=14, fontweight='bold')
+        ax2.grid(axis='y', alpha=0.4, linestyle='--')
         
         # Add value labels
-        for container in ax.containers:
-            ax.bar_label(container, fontsize=11)
+        for bar in bars:
+            height = bar.get_height()
+            ax2.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{int(height)}',
+                    ha='center', va='bottom', fontsize=13, fontweight='bold')
         
         plt.tight_layout()
-        images['sentiment_bar'] = plot_to_base64(fig)
+        images['sentiment_overview'] = plot_to_base64(fig)
     
-    # 4. Sentiment Score Distribution Histogram
+    # 2. Complaint Category Analysis
+    if counts:
+        df_counts = pd.DataFrame(list(counts.items()), columns=["Category", "Count"])
+        df_counts = df_counts.sort_values("Count", ascending=False)
+        
+        fig, ax = plt.subplots(figsize=(14, 7))
+        bars = ax.bar(df_counts["Category"], df_counts["Count"], 
+                     color=plt.cm.viridis(range(len(df_counts))), 
+                     edgecolor='black', linewidth=1.5, alpha=0.85)
+        
+        ax.set_title("📊 Complaint Frequency by Category", fontsize=20, fontweight='bold', pad=25)
+        ax.set_xlabel("Category", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Number of Mentions", fontsize=14, fontweight='bold')
+        plt.xticks(rotation=45, ha='right', fontsize=12)
+        ax.grid(axis='y', alpha=0.4, linestyle='--')
+        
+        # Add value labels on bars
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{int(height)}',
+                   ha='center', va='bottom', fontsize=11, fontweight='bold')
+        
+        plt.tight_layout()
+        images['category_bar'] = plot_to_base64(fig)
+    
+    # 3. Sentiment Score Distribution
     if sentiment_scores:
-        fig, ax = plt.subplots(figsize=(11, 6))
-        ax.hist(sentiment_scores, bins=30, color='steelblue', edgecolor='black', alpha=0.7)
-        ax.axvline(x=0.05, color='green', linestyle='--', linewidth=2, label='Positive threshold')
-        ax.axvline(x=-0.05, color='red', linestyle='--', linewidth=2, label='Negative threshold')
-        ax.set_title("Distribution of Sentiment Scores", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Sentiment Score", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Frequency", fontsize=12, fontweight='bold')
-        ax.legend(fontsize=10)
-        ax.grid(axis='y', alpha=0.3)
+        fig, ax = plt.subplots(figsize=(13, 7))
+        
+        n, bins, patches = ax.hist(sentiment_scores, bins=40, 
+                                   color='steelblue', edgecolor='black', 
+                                   alpha=0.75, linewidth=1.2)
+        
+        # Color bars by sentiment
+        for i, patch in enumerate(patches):
+            if bins[i] >= 0.05:
+                patch.set_facecolor('#2ecc71')
+            elif bins[i] <= -0.05:
+                patch.set_facecolor('#e74c3c')
+            else:
+                patch.set_facecolor('#95a5a6')
+        
+        ax.axvline(x=0.05, color='green', linestyle='--', linewidth=2.5, 
+                  label='Positive threshold', alpha=0.8)
+        ax.axvline(x=-0.05, color='red', linestyle='--', linewidth=2.5, 
+                  label='Negative threshold', alpha=0.8)
+        ax.axvline(x=0, color='gray', linestyle='-', linewidth=2, 
+                  label='Neutral', alpha=0.6)
+        
+        ax.set_title("📈 Distribution of Sentiment Scores", fontsize=20, fontweight='bold', pad=25)
+        ax.set_xlabel("Sentiment Score", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Frequency", fontsize=14, fontweight='bold')
+        ax.legend(fontsize=12, loc='upper right')
+        ax.grid(axis='y', alpha=0.4, linestyle='--')
+        
         plt.tight_layout()
         images['score_hist'] = plot_to_base64(fig)
     
-    # 5. Category vs Sentiment Heatmap
+    # 4. Category vs Sentiment Heatmap
     if counts and any(sentiments.values()):
         category_sentiment = {}
         for r in reviews:
@@ -209,16 +352,22 @@ def generate_visualizations(reviews):
         if category_sentiment:
             df_heatmap = pd.DataFrame(category_sentiment).T.fillna(0)
             
-            fig, ax = plt.subplots(figsize=(11, 7))
-            sns.heatmap(df_heatmap, annot=True, fmt='g', cmap='YlOrRd', 
-                       linewidths=0.5, ax=ax, cbar_kws={'label': 'Count'})
-            ax.set_title("Complaint Categories vs Sentiment", fontsize=16, fontweight='bold', pad=20)
-            ax.set_xlabel("Category", fontsize=12, fontweight='bold')
-            ax.set_ylabel("Sentiment", fontsize=12, fontweight='bold')
+            fig, ax = plt.subplots(figsize=(13, 8))
+            sns.heatmap(df_heatmap, annot=True, fmt='g', cmap='RdYlGn_r', 
+                       linewidths=2, ax=ax, cbar_kws={'label': 'Count'},
+                       annot_kws={'fontsize': 12, 'weight': 'bold'})
+            
+            ax.set_title("🔥 Complaint Categories vs Sentiment Heatmap", 
+                        fontsize=20, fontweight='bold', pad=25)
+            ax.set_xlabel("Category", fontsize=14, fontweight='bold')
+            ax.set_ylabel("Sentiment", fontsize=14, fontweight='bold')
+            plt.xticks(rotation=45, ha='right', fontsize=11)
+            plt.yticks(rotation=0, fontsize=11)
+            
             plt.tight_layout()
             images['category_sentiment_heatmap'] = plot_to_base64(fig)
     
-    # 6. Top Keywords Bar Chart
+    # 5. Top Keywords
     all_keywords = []
     for r in reviews:
         if hasattr(r, 'keywords') and r.keywords:
@@ -226,63 +375,77 @@ def generate_visualizations(reviews):
     
     if all_keywords:
         keyword_counts = Counter(all_keywords)
-        top_keywords = dict(keyword_counts.most_common(20))
+        top_keywords = dict(keyword_counts.most_common(15))
         
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(13, 9))
         keywords = list(top_keywords.keys())
         counts_list = list(top_keywords.values())
         
-        ax.barh(keywords, counts_list, color='coral', edgecolor='black', alpha=0.8)
-        ax.set_title("Top 20 Keywords in Reviews", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Frequency", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Keywords", fontsize=12, fontweight='bold')
+        colors_gradient = plt.cm.plasma(range(len(keywords)))
+        bars = ax.barh(keywords, counts_list, color=colors_gradient, 
+                      edgecolor='black', linewidth=1.3, alpha=0.85)
+        
+        ax.set_title("🔑 Top 15 Keywords in Reviews", fontsize=20, fontweight='bold', pad=25)
+        ax.set_xlabel("Frequency", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Keywords", fontsize=14, fontweight='bold')
         ax.invert_yaxis()
-        ax.grid(axis='x', alpha=0.3)
+        ax.grid(axis='x', alpha=0.4, linestyle='--')
         
         # Add value labels
-        for i, v in enumerate(counts_list):
-            ax.text(v + 0.3, i, str(v), va='center', fontsize=9)
+        for i, (bar, v) in enumerate(zip(bars, counts_list)):
+            ax.text(v + 0.5, i, str(v), va='center', fontsize=11, fontweight='bold')
         
         plt.tight_layout()
         images['keywords_bar'] = plot_to_base64(fig)
     
-    # 7. Data Source Distribution
+    # 6. Data Source Distribution
     if source_distribution:
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(12, 7))
         sources = list(source_distribution.keys())
         counts_list = list(source_distribution.values())
         
         colors_list = plt.cm.Set3(range(len(sources)))
-        ax.bar(sources, counts_list, color=colors_list, edgecolor='black', alpha=0.8)
-        ax.set_title("Reviews by Data Source", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Data Source", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Number of Reviews", fontsize=12, fontweight='bold')
-        plt.xticks(rotation=45, ha='right')
+        bars = ax.bar(sources, counts_list, color=colors_list, 
+                     edgecolor='black', linewidth=1.5, alpha=0.85)
+        
+        ax.set_title("📂 Reviews by Data Source", fontsize=20, fontweight='bold', pad=25)
+        ax.set_xlabel("Data Source", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold')
+        plt.xticks(rotation=45, ha='right', fontsize=12)
+        ax.grid(axis='y', alpha=0.4, linestyle='--')
         
         # Add value labels
-        for i, v in enumerate(counts_list):
-            ax.text(i, v + 0.5, str(v), ha='center', va='bottom', fontsize=10, fontweight='bold')
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{int(height)}',
+                   ha='center', va='bottom', fontsize=12, fontweight='bold')
         
         plt.tight_layout()
         images['source_distribution'] = plot_to_base64(fig)
     
-    # 8. Rating Distribution
+    # 7. Rating Distribution
     if rating_distribution:
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.hist(rating_distribution, bins=20, color='mediumseagreen', 
-                edgecolor='black', alpha=0.7)
-        ax.axvline(x=sum(rating_distribution)/len(rating_distribution), 
-                   color='red', linestyle='--', linewidth=2, 
-                   label=f'Mean: {sum(rating_distribution)/len(rating_distribution):.2f}')
-        ax.set_title("Rating Distribution", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Rating", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Frequency", fontsize=12, fontweight='bold')
-        ax.legend(fontsize=11)
-        ax.grid(axis='y', alpha=0.3)
+        fig, ax = plt.subplots(figsize=(12, 7))
+        
+        n, bins, patches = ax.hist(rating_distribution, bins=25, 
+                                   color='mediumseagreen', 
+                                   edgecolor='black', linewidth=1.2, alpha=0.75)
+        
+        mean_rating = sum(rating_distribution)/len(rating_distribution)
+        ax.axvline(x=mean_rating, color='red', linestyle='--', linewidth=3, 
+                  label=f'Mean: {mean_rating:.2f}', alpha=0.8)
+        
+        ax.set_title("⭐ Rating Distribution", fontsize=20, fontweight='bold', pad=25)
+        ax.set_xlabel("Rating", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Frequency", fontsize=14, fontweight='bold')
+        ax.legend(fontsize=13, loc='upper left')
+        ax.grid(axis='y', alpha=0.4, linestyle='--')
+        
         plt.tight_layout()
         images['rating_dist'] = plot_to_base64(fig)
     
-    # 9. Sentiment Trend (if timestamp available)
+    # 8. Sentiment Trend Over Time
     reviews_with_time = [r for r in reviews if hasattr(r, 'created_at') and r.created_at]
     if len(reviews_with_time) > 10:
         df_timeline = pd.DataFrame([
@@ -300,14 +463,16 @@ def generate_visualizations(reviews):
         
         weekly_sentiment = df_timeline.groupby(['week', 'sentiment']).size().unstack(fill_value=0)
         
-        fig, ax = plt.subplots(figsize=(12, 6))
-        weekly_sentiment.plot(kind='line', ax=ax, marker='o', linewidth=2)
-        ax.set_title("Sentiment Trend Over Time", fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel("Week", fontsize=12, fontweight='bold')
-        ax.set_ylabel("Number of Reviews", fontsize=12, fontweight='bold')
-        ax.legend(title='Sentiment', fontsize=10)
-        ax.grid(True, alpha=0.3)
-        plt.xticks(rotation=45, ha='right')
+        fig, ax = plt.subplots(figsize=(14, 7))
+        weekly_sentiment.plot(kind='line', ax=ax, marker='o', linewidth=3, markersize=8)
+        
+        ax.set_title("📅 Sentiment Trend Over Time", fontsize=20, fontweight='bold', pad=25)
+        ax.set_xlabel("Week", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold')
+        ax.legend(title='Sentiment', fontsize=12, title_fontsize=13)
+        ax.grid(True, alpha=0.4, linestyle='--')
+        plt.xticks(rotation=45, ha='right', fontsize=11)
+        
         plt.tight_layout()
         images['sentiment_trend'] = plot_to_base64(fig)
     
