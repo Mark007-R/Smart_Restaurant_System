@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .hero-section {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .hero-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+  }
+
+  .hero-section p {
+    font-size: 1.2rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+  }
+
+  .search-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .upload-section {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .restaurant-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .restaurant-card .card-img-overlay {
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .restaurant-card:hover .card-img-overlay {
+    opacity: 1;
+  }
+
+  .rating-badge {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+  }
+
+  .source-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #667eea;
+  }
+
+  .feature-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+  }
+
+  .loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .restaurant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .hero-section h1 {
+      font-size: 1.8rem;
+    }
+    
+    .restaurant-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<!-- Hero Section -->
+<div class="hero-section">
+  <h1>
+    <i class="fas fa-utensils"></i>
+    Discover Restaurant Insights
+  </h1>
+  <p>Analyze customer reviews with AI-powered sentiment analysis</p>
+</div>
+
+<!-- Search & Upload Section -->
+<div class="search-container">
+  <form method="POST" action="{{ url_for('analyze') }}" enctype="multipart/form-data" id="analyzeForm">
+    <div class="row g-3 align-items-end">
+      <!-- Restaurant Name Input -->
+      <div class="col-md-6">
+        <label class="form-label fw-bold">
+          <i class="fas fa-search"></i> Restaurant Name
+        </label>
+        <input type="text" 
+               name="restaurant_name" 
+               id="restaurantName"
+               placeholder="e.g., Taj Hotel, Cafe Mondegar..." 
+               required 
+               class="form-control form-control-lg"
+               list="restaurantSuggestions">
+        <datalist id="restaurantSuggestions">
+          {% for r in restaurants %}
+          <option value="{{ r.name }}">
+          {% endfor %}
+        </datalist>
+      </div>
+
+      <!-- Analyze Button -->
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-success btn-lg w-100">
+          <i class="fas fa-chart-line"></i> Analyze Reviews
+        </button>
+      </div>
+
+      <!-- Enable Scraping Checkbox -->
+      <div class="col-md-3">
+        <div class="form-check form-switch" style="padding-top: 1rem;">
+          <input class="form-check-input" type="checkbox" name="try_scrape" id="enableScraping">
+          <label class="form-check-label" for="enableScraping">
+            <small>Enable web scraping fallback</small>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <label class="form-label fw-bold">
+        <i class="fas fa-cloud-upload-alt"></i> Or Upload Your Dataset
+      </label>
+      <input type="file" 
+             name="datafile" 
+             class="form-control" 
+             accept=".csv,.txt">
+      <small class="text-muted">
+        <i class="fas fa-info-circle"></i> Supported formats: CSV, TXT
+      </small>
+    </div>
+  </form>
+
+  <!-- Loading Spinner -->
+  <div class="loading-spinner" id="loadingSpinner">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3 text-muted">Analyzing reviews... This may take a moment.</p>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="row text-center mb-5">
+  <div class="col-md-4 mb-3">
+    <div class="feature-icon">
+      <i class="fas fa-brain"></i>
+    </div>
+    <h5>AI-Powered Analysis</h5>
+    <p class="text-muted">Advanced sentiment analysis and categorization</p>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="feature-icon">
+      <i class="fas fa-chart-pie"></i>
+    </div>
+    <h5>Visual Insights</h5>
+    <p class="text-muted">Beautiful charts and comprehensive statistics</p>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="feature-icon">
+      <i class="fas fa-comments"></i>
+    </div>
+    <h5>Smart Chat</h5>
+    <p class="text-muted">Ask questions about reviews using RAG</p>
+  </div>
+</div>
+
+<hr class="my-5">
+
+<!-- Available Restaurants Section -->
+<div class="text-center mb-4">
+  <h3 class="fw-bold">
+    <i class="fas fa-store"></i>
+    Available Restaurants
+  </h3>
+  <p class="text-muted">Browse restaurants from our curated datasets</p>
+</div>
+
+<div class="restaurant-grid">
+  {% for r in restaurants %}
+  <div class="card restaurant-card h-100">
+    <img src="{{ r.photo or 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4' }}" 
+         class="card-img-top" 
+         alt="{{ r.name }}"
+         onerror="this.src='https://images.unsplash.com/photo-1517248135467-4c7edcad34c4'">
+    
+    <div class="card-img-overlay">
+      <h5 class="text-white">{{ r.name }}</h5>
+    </div>
+    
+    <div class="card-body">
+      <h5 class="card-title">{{ r.name }}</h5>
+      
+      <div class="mb-2">
+        <span class="rating-badge">
+          <i class="fas fa-star"></i>
+          {{ r.rating or 'N/A' }}
+        </span>
+      </div>
+
+      <p class="text-muted mb-2">
+        <i class="fas fa-map-marker-alt"></i>
+        {{ r.address or r.location or 'Address not available' }}
+      </p>
+
+      {% if r.cuisines %}
+      <p class="text-muted small mb-2">
+        <i class="fas fa-utensils"></i>
+        {{ r.cuisines[:50] }}{% if r.cuisines|length > 50 %}...{% endif %}
+      </p>
+      {% endif %}
+
+      {% if r.cost %}
+      <p class="text-muted small mb-3">
+        <i class="fas fa-rupee-sign"></i>
+        {{ r.cost }}
+      </p>
+      {% endif %}
+
+      <form action="{{ url_for('analyze') }}" method="POST" style="margin-top: auto;">
+        <input type="hidden" name="restaurant_name" value="{{ r.name }}">
+        <button type="submit" class="btn btn-outline-success w-100">
+          <i class="fas fa-chart-bar"></i> Analyze
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if not restaurants %}
+<div class="text-center py-5">
+  <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+  <h4>No restaurants found</h4>
+  <p class="text-muted">Please ensure dataset files are in the 'datasets' folder</p>
+</div>
+{% endif %}
+
+<script>
+// Show loading spinner on form submit
+document.getElementById('analyzeForm').addEventListener('submit', function() {
+  document.getElementById('loadingSpinner').style.display = 'block';
+  document.querySelector('.search-container form').style.display = 'none';
+});
+
+// Restaurant search autocomplete enhancement
+const restaurantInput = document.getElementById('restaurantName');
+restaurantInput.addEventListener('input', function() {
+  this.style.borderColor = this.value ? '#10b981' : '#e2e8f0';
+});
+</script>
+
+{% endblock %}

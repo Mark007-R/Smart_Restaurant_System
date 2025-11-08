@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .results-header {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .results-header h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        text-align: center;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card.positive {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .stat-card.negative {
+        background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    }
+
+    .stat-card.neutral {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .stat-card h3 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .stat-card p {
+        margin: 0.5rem 0 0 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-card .icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .visualization-section {
+        margin: 3rem 0;
+    }
+
+    .viz-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .viz-card h4 {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .viz-card img {
+        width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+    }
+
+    .category-tag {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        border-radius: 2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        color: #1e293b;
+    }
+
+    .source-breakdown {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        margin: 2rem 0;
+    }
+
+    .source-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 3rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 1rem 2rem;
+        font-size: 1rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .reviews-table {
+        margin-top: 2rem;
+    }
+
+    .review-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #667eea;
+    }
+
+    .review-item.positive {
+        border-left-color: #10b981;
+    }
+
+    .review-item.negative {
+        border-left-color: #ef4444;
+    }
+
+    .review-item.neutral {
+        border-left-color: #3b82f6;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- Results Header -->
+<div class="results-header">
+    <h2>
+        <i class="fas fa-chart-line"></i>
+        Analysis Results: {{ restaurant }}
+    </h2>
+    <p class="text-muted mb-0">Comprehensive review analysis and insights</p>
+</div>
+
+<!-- Statistics Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="icon">
+            <i class="fas fa-comments"></i>
+        </div>
+        <h3>{{ total_reviews }}</h3>
+        <p>Total Reviews</p>
+    </div>
+
+    <div class="stat-card positive">
+        <div class="icon">
+            <i class="fas fa-smile"></i>
+        </div>
+        <h3>{{ sentiment_percentages.Positive }}%</h3>
+        <p>Positive</p>
+    </div>
+
+    <div class="stat-card negative">
+        <div class="icon">
+            <i class="fas fa-frown"></i>
+        </div>
+        <h3>{{ sentiment_percentages.Negative }}%</h3>
+        <p>Negative</p>
+    </div>
+
+    <div class="stat-card neutral">
+        <div class="icon">
+            <i class="fas fa-meh"></i>
+        </div>
+        <h3>{{ sentiment_percentages.Neutral }}%</h3>
+        <p>Neutral</p>
+    </div>
+</div>
+
+<!-- Source Breakdown -->
+{% if source_counts %}
+<div class="source-breakdown">
+    <h4 class="fw-bold mb-3">
+        <i class="fas fa-database"></i> Data Sources
+    </h4>
+    {% for source, count in source_counts.items() %}
+    <div class="source-item">
+        <span>
+            <i class="fas fa-file-csv"></i>
+            {{ source }}
+        </span>
+        <span class="badge bg-primary">{{ count }} reviews</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Category Breakdown -->
+{% if category_counts %}
+<div class="viz-card">
+    <h4>
+        <i class="fas fa-tags"></i>
+        Top Complaint Categories
+    </h4>
+    <div>
+        {% for category, count in category_counts.items() %}
+        <span class="category-tag">
+            {{ category }}: {{ count }}
+        </span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Visualizations Section -->
+<div class="visualization-section">
+    <h3 class="text-center mb-4 fw-bold">
+        <i class="fas fa-chart-pie"></i>
+        Visual Analytics
+    </h3>
+
+    <div class="row g-4">
+        {% if visualizations.sentiment_pie %}
+        <div class="col-md-6">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-chart-pie"></i>
+                    Sentiment Distribution
+                </h4>
+                <img src="{{ visualizations.sentiment_pie }}" alt="Sentiment Pie Chart">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.category_bar %}
+        <div class="col-md-6">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-chart-bar"></i>
+                    Category Frequency
+                </h4>
+                <img src="{{ visualizations.category_bar }}" alt="Category Bar Chart">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.sentiment_bar %}
+        <div class="col-md-6">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-chart-column"></i>
+                    Sentiment Counts
+                </h4>
+                <img src="{{ visualizations.sentiment_bar }}" alt="Sentiment Bar Chart">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.score_hist %}
+        <div class="col-md-6">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-chart-area"></i>
+                    Score Distribution
+                </h4>
+                <img src="{{ visualizations.score_hist }}" alt="Score Histogram">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.category_sentiment_heatmap %}
+        <div class="col-md-12">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-fire"></i>
+                    Category vs Sentiment Heatmap
+                </h4>
+                <img src="{{ visualizations.category_sentiment_heatmap }}" alt="Heatmap">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.keywords_bar %}
+        <div class="col-md-12">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-key"></i>
+                    Top Keywords
+                </h4>
+                <img src="{{ visualizations.keywords_bar }}" alt="Keywords Bar Chart">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.source_distribution %}
+        <div class="col-md-6">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-database"></i>
+                    Source Distribution
+                </h4>
+                <img src="{{ visualizations.source_distribution }}" alt="Source Distribution">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.rating_dist %}
+        <div class="col-md-6">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-star"></i>
+                    Rating Distribution
+                </h4>
+                <img src="{{ visualizations.rating_dist }}" alt="Rating Distribution">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visualizations.sentiment_trend %}
+        <div class="col-md-12">
+            <div class="viz-card">
+                <h4>
+                    <i class="fas fa-chart-line"></i>
+                    Sentiment Trend Over Time
+                </h4>
+                <img src="{{ visualizations.sentiment_trend }}" alt="Sentiment Trend">
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Reviews -->
+<div class="reviews-table">
+    <h3 class="text-center mb-4 fw-bold">
+        <i class="fas fa-comments"></i>
+        Recent Reviews
+    </h3>
+
+    {% for review in reviews[:10] %}
+    <div class="review-item {{ review.sentiment|lower if review.sentiment else 'neutral' }}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span
+                    class="badge bg-{{ 'success' if review.sentiment == 'Positive' else 'danger' if review.sentiment == 'Negative' else 'info' }}">
+                    {{ review.sentiment or 'Neutral' }}
+                </span>
+                {% if review.rating %}
+                <span class="badge bg-warning text-dark ms-2">
+                    <i class="fas fa-star"></i> {{ review.rating }}
+                </span>
+                {% endif %}
+            </div>
+            <small class="text-muted">
+                <i class="fas fa-file"></i> {{ review.source_file or 'Unknown' }}
+            </small>
+        </div>
+
+        <p class="mb-2">{{ review.text[:300] }}{% if review.text|length > 300 %}...{% endif %}</p>
+
+        {% if review.keywords %}
+        <div>
+            <small class="text-muted">
+                <i class="fas fa-tags"></i>
+                {% for keyword in review.keywords.split(',')[:5] %}
+                <span class="badge bg-light text-dark me-1">{{ keyword }}</span>
+                {% endfor %}
+            </small>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Action Buttons -->
+<div class="action-buttons">
+    <a href="{{ url_for('recommendations', restaurant_name=restaurant) }}" class="btn btn-success action-btn">
+        <i class="fas fa-lightbulb"></i>
+        View Recommendations
+    </a>
+
+    <a href="{{ url_for('chat') }}" class="btn btn-primary action-btn">
+        <i class="fas fa-comments"></i>
+        Chat with AI Assistant
+    </a>
+
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary action-btn">
+        <i class="fas fa-home"></i>
+        Back to Home
+    </a>
+</div>
+
+{% endblock %}

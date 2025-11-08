@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .chat-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .chat-header {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .chat-header h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .chat-info {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .chat-info-icon {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    #chat-box {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        height: 500px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        scroll-behavior: smooth;
+    }
+
+    #chat-box::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #chat-box::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    #chat-box::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+
+    .message {
+        margin-bottom: 1.5rem;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .message-user {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+
+    .message-bot {
+        display: flex;
+        justify-content: flex-start;
+        gap: 1rem;
+    }
+
+    .message-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.2rem;
+    }
+
+    .message-avatar.user {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+    }
+
+    .message-avatar.bot {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .message-content {
+        max-width: 70%;
+        padding: 1rem 1.5rem;
+        border-radius: 1rem;
+        line-height: 1.6;
+    }
+
+    .message-user .message-content {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+        border-bottom-right-radius: 0.25rem;
+    }
+
+    .message-bot .message-content {
+        background: #f8fafc;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 0.25rem;
+    }
+
+    .message-timestamp {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-top: 0.25rem;
+    }
+
+    #chat-form {
+        background: white;
+        padding: 1rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    #question {
+        flex: 1;
+        border: 2px solid #e2e8f0;
+        border-radius: 2rem;
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    #question:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    #chat-form button {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    #chat-form button:hover:not(:disabled) {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    #chat-form button:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+    }
+
+    .typing-indicator {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        max-width: fit-content;
+    }
+
+    .typing-indicator.active {
+        display: flex;
+    }
+
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #667eea;
+        animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+
+        0%,
+        60%,
+        100% {
+            transform: translateY(0);
+        }
+
+        30% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .suggested-questions {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-top: 1.5rem;
+    }
+
+    .suggested-questions h5 {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .suggestion-chip {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 2rem;
+        color: #667eea;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .suggestion-chip:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .empty-chat {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #94a3b8;
+    }
+
+    .empty-chat i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .message-content {
+            max-width: 85%;
+        }
+
+        #chat-box {
+            height: 400px;
+        }
+    }
+</style>
+
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <h2>
+            <i class="fas fa-robot"></i>
+            AI Chat Assistant
+        </h2>
+        <p class="text-muted mb-0">Ask questions about {{ restaurant or "restaurant reviews" }}</p>
+    </div>
+
+    <!-- Chat Info -->
+    {% if restaurant %}
+    <div class="chat-info">
+        <div class="chat-info-icon">
+            <i class="fas fa-utensils"></i>
+        </div>
+        <div>
+            <strong>Currently analyzing:</strong> {{ restaurant }}
+            <br>
+            <small class="text-muted">Ask specific questions about reviews, sentiment, or recommendations</small>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        Please analyze a restaurant first to enable contextual chat.
+        <a href="{{ url_for('index') }}" class="alert-link">Go to Home</a>
+    </div>
+    {% endif %}
+
+    <!-- Chat Box -->
+    <div id="chat-box">
+        <div class="empty-chat">
+            <i class="fas fa-comments"></i>
+            <h5>Start a Conversation</h5>
+            <p>Ask me anything about the restaurant reviews!</p>
+        </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <span class="ms-2 text-muted">AI is thinking...</span>
+    </div>
+
+    <!-- Chat Form -->
+    <form id="chat-form">
+        <input type="text" id="question" name="question" placeholder="Ask about food quality, service, pricing..."
+            required autocomplete="off">
+        <button type="submit" id="sendBtn">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </form>
+
+    <!-- Suggested Questions -->
+    <div class="suggested-questions">
+        <h5>
+            <i class="fas fa-lightbulb"></i>
+            Suggested Questions
+        </h5>
+        <span class="suggestion-chip" data-question="What do customers say about the food quality?">
+            <i class="fas fa-utensils"></i> Food Quality
+        </span>
+        <span class="suggestion-chip" data-question="How is the service at this restaurant?">
+            <i class="fas fa-concierge-bell"></i> Service Quality
+        </span>
+        <span class="suggestion-chip" data-question="Is it expensive?">
+            <i class="fas fa-money-bill-wave"></i> Pricing
+        </span>
+        <span class="suggestion-chip" data-question="Should I visit this restaurant?">
+            <i class="fas fa-star"></i> Recommendation
+        </span>
+        <span class="suggestion-chip" data-question="What are the most common complaints?">
+            <i class="fas fa-exclamation-circle"></i> Common Issues
+        </span>
+        <span class="suggestion-chip" data-question="What items do people recommend?">
+            <i class="fas fa-heart"></i> Popular Items
+        </span>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('chat-form');
+    const box = document.getElementById('chat-box');
+    const questionInput = document.getElementById('question');
+    const sendBtn = document.getElementById('sendBtn');
+    const typingIndicator = document.getElementById('typingIndicator');
+
+    // Clear empty state on first message
+    let isFirstMessage = true;
+
+    // Format timestamp
+    function getTimestamp() {
+        const now = new Date();
+        return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Add message to chat
+    function addMessage(text, isUser = false) {
+        if (isFirstMessage) {
+            box.innerHTML = '';
+            isFirstMessage = false;
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'message-user' : 'message-bot'}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = `message-avatar ${isUser ? 'user' : 'bot'}`;
+        avatar.innerHTML = `<i class="fas fa-${isUser ? 'user' : 'robot'}"></i>`;
+
+        const content = document.createElement('div');
+        content.className = 'message-content';
+
+        // Format bot messages with markdown-like syntax
+        let formattedText = text;
+        if (!isUser) {
+            formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        }
+
+        content.innerHTML = `
+    ${formattedText}
+    <div class="message-timestamp">${getTimestamp()}</div>
+  `;
+
+        if (isUser) {
+            messageDiv.appendChild(content);
+            messageDiv.appendChild(avatar);
+        } else {
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+        }
+
+        box.appendChild(messageDiv);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    // Show/hide typing indicator
+    function setTyping(isTyping) {
+        typingIndicator.classList.toggle('active', isTyping);
+        sendBtn.disabled = isTyping;
+        if (isTyping) {
+            box.scrollTop = box.scrollHeight;
+        }
+    }
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        // Add user message
+        addMessage(question, true);
+        questionInput.value = '';
+
+        // Show typing indicator
+        setTyping(true);
+
+        try {
+            // Send request to backend
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `question=${encodeURIComponent(question)}`
+            });
+
+            const data = await response.json();
+
+            // Hide typing indicator
+            setTyping(false);
+
+            // Add bot response
+            if (data.answer) {
+                addMessage(data.answer);
+            } else if (data.error) {
+                addMessage(`Sorry, I encountered an error: ${data.error}`);
+            } else {
+                addMessage("I couldn't generate a response. Please try rephrasing your question.");
+            }
+
+        } catch (error) {
+            setTyping(false);
+            addMessage(`Sorry, something went wrong: ${error.message}`);
+        }
+    });
+
+    // Handle suggested questions
+    document.querySelectorAll('.suggestion-chip').forEach(chip => {
+        chip.addEventListener('click', function () {
+            const question = this.getAttribute('data-question');
+            questionInput.value = question;
+            questionInput.focus();
+        });
+    });
+
+    // Auto-resize input on focus
+    questionInput.addEventListener('focus', function () {
+        this.style.borderColor = '#667eea';
+    });
+
+    questionInput.addEventListener('blur', function () {
+        if (!this.value) {
+            this.style.borderColor = '#e2e8f0';
+        }
+    });
+
+    // Enable Enter to send (Shift+Enter for new line would require textarea)
+    questionInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+</script>
+
+{% endblock %}
