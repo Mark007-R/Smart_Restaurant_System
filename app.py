@@ -644,11 +644,9 @@ def search_restaurants():
         return jsonify([])
     
     _, restaurants_data = process_all_datasets(restaurant_filter=None)
-    
-    # Filter restaurants matching query
+
     matches = [r for r in restaurants_data if query in r['name'].lower()]
-    
-    # Deduplicate
+
     unique = {}
     for r in matches:
         if r['name'] not in unique:
@@ -656,7 +654,5 @@ def search_restaurants():
     
     return jsonify(list(unique.values())[:10])
 
-
-# ---------------- RUN APP ----------------
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
