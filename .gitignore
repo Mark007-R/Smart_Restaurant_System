@@ -58,6 +58,7 @@ cache/
 *.pickle
 uploads/
 *.csv
+datasets
 datasets/*.csv
 !datasets/example_mumbaires.csv
 !datasets/example_zomato.csv
