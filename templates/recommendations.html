@@ -2,28 +2,323 @@
 {% block content %}
 
 <style>
+  :root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --danger-gradient: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    animation: fadeIn 0.6s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Header Section */
   .recommendations-header {
     text-align: center;
-    padding: 2rem;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    border-radius: 1rem;
+    padding: 3rem 2rem;
+    background: var(--primary-gradient);
+    border-radius: 1.5rem;
     margin-bottom: 3rem;
+    box-shadow: var(--shadow-lg);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .recommendations-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="rgba(255,255,255,0.1)"/></svg>');
+    opacity: 0.3;
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+
+    50% {
+      transform: scale(1.1);
+      opacity: 0.5;
+    }
   }
 
   .recommendations-header h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #1e293b;
+    font-size: 2.5rem;
+    font-weight: 800;
     margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .recommendations-header p {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Statistics Cards */
+  .stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+  }
+
+  .stat-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 1.5rem;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+  }
+
+  .stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+    transition: height 0.3s ease;
+  }
+
+  .stat-box:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(102, 126, 234, 0.3);
+  }
+
+  .stat-box:hover::before {
+    height: 100%;
+    opacity: 0.1;
+  }
+
+  .stat-box.positive::before {
+    background: var(--success-gradient);
+  }
+
+  .stat-box.negative::before {
+    background: var(--danger-gradient);
+  }
+
+  .stat-box.neutral::before {
+    background: var(--info-gradient);
+  }
+
+  .stat-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.2;
+    transition: all 0.3s ease;
+  }
+
+  .stat-box:hover .stat-icon {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+
+  .stat-box.positive .stat-icon {
+    color: #11998e;
+  }
+
+  .stat-box.negative .stat-icon {
+    color: #eb3349;
+  }
+
+  .stat-box.neutral .stat-icon {
+    color: #4facfe;
+  }
+
+  .stat-box h3 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-box.positive h3 {
+    background: var(--success-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-box.negative h3 {
+    background: var(--danger-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-box.neutral h3 {
+    background: var(--info-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .stat-box p {
+    margin: 0;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Category Breakdown */
+  .category-breakdown {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    margin: 3rem 0;
+    border: 2px solid #f1f5f9;
+  }
+
+  .category-breakdown h4 {
+    color: #1e293b;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .category-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+    background: #f8fafc;
+    transition: all 0.3s ease;
+  }
+
+  .category-item:hover {
+    background: #f1f5f9;
+    transform: translateX(8px);
+  }
+
+  .category-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-gradient);
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .category-name {
+    font-weight: 600;
+    color: #1e293b;
+    min-width: 150px;
+  }
+
+  .category-bar {
+    flex: 1;
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .category-bar-fill {
+    height: 100%;
+    background: var(--primary-gradient);
+    border-radius: 1rem;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .category-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .category-count {
+    min-width: 80px;
+    text-align: right;
+    font-weight: 700;
+    color: #667eea;
+    font-size: 1.1rem;
+  }
+
+  /* Recommendation Cards */
+  .recommendations-section {
+    margin: 3rem 0;
+  }
+
+  .section-title {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    color: #1e293b;
+    font-weight: 800;
+    font-size: 2rem;
   }
 
   .recommendation-card {
     background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #667eea;
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-md);
+    border-left: 6px solid #667eea;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -34,14 +329,14 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 5px;
+    width: 6px;
     height: 100%;
     transition: width 0.3s ease;
   }
 
   .recommendation-card:hover {
-    transform: translateX(5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateX(8px);
+    box-shadow: var(--shadow-lg);
   }
 
   .recommendation-card:hover::before {
@@ -49,9 +344,9 @@
     opacity: 0.05;
   }
 
+  /* Priority Colors */
   .recommendation-card.priority-CRITICAL {
     border-left-color: #dc2626;
-    background: linear-gradient(to right, rgba(220, 38, 38, 0.05) 0%, white 100%);
   }
 
   .recommendation-card.priority-CRITICAL::before {
@@ -60,7 +355,6 @@
 
   .recommendation-card.priority-HIGH {
     border-left-color: #f59e0b;
-    background: linear-gradient(to right, rgba(245, 158, 11, 0.05) 0%, white 100%);
   }
 
   .recommendation-card.priority-HIGH::before {
@@ -69,7 +363,6 @@
 
   .recommendation-card.priority-MEDIUM {
     border-left-color: #3b82f6;
-    background: linear-gradient(to right, rgba(59, 130, 246, 0.05) 0%, white 100%);
   }
 
   .recommendation-card.priority-MEDIUM::before {
@@ -78,7 +371,6 @@
 
   .recommendation-card.priority-LOW {
     border-left-color: #10b981;
-    background: linear-gradient(to right, rgba(16, 185, 129, 0.05) 0%, white 100%);
   }
 
   .recommendation-card.priority-LOW::before {
@@ -87,7 +379,6 @@
 
   .recommendation-card.priority-INFO {
     border-left-color: #8b5cf6;
-    background: linear-gradient(to right, rgba(139, 92, 246, 0.05) 0%, white 100%);
   }
 
   .recommendation-card.priority-INFO::before {
@@ -95,14 +386,16 @@
   }
 
   .priority-badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 2rem;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.8px;
+    margin-bottom: 1rem;
   }
 
   .priority-CRITICAL {
@@ -131,270 +424,353 @@
   }
 
   .recommendation-text {
-    font-size: 1.1rem;
-    color: #1e293b;
-    line-height: 1.6;
+    font-size: 1.15rem;
+    color: #334155;
+    line-height: 1.8;
     margin: 0;
   }
 
   .percentage-indicator {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
     background: rgba(102, 126, 234, 0.1);
     border-radius: 2rem;
     font-weight: 600;
     color: #667eea;
-    margin-top: 0.75rem;
+    margin-top: 1rem;
+    border: 2px solid rgba(102, 126, 234, 0.2);
   }
 
-  .stats-summary {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin: 2rem 0;
-  }
-
-  .stat-box {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 1rem;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-  }
-
-  .stat-box h3 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-
-  .stat-box p {
-    margin: 0;
-    opacity: 0.9;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.9rem;
-  }
-
-  .category-breakdown {
-    background: white;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    margin: 2rem 0;
-  }
-
-  .category-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .category-item:last-child {
-    border-bottom: none;
-  }
-
-  .category-name {
-    font-weight: 600;
-    color: #1e293b;
-  }
-
-  .category-bar {
-    flex: 1;
-    height: 8px;
-    background: #e2e8f0;
-    border-radius: 1rem;
-    margin: 0 1rem;
-    overflow: hidden;
-  }
-
-  .category-bar-fill {
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 1rem;
-    transition: width 0.5s ease;
-  }
-
+  /* Action Section */
   .action-section {
     text-align: center;
-    margin-top: 3rem;
-    padding: 2rem;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    border-radius: 1rem;
+    margin-top: 4rem;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+    border-radius: 1.5rem;
+    border: 2px solid rgba(102, 126, 234, 0.1);
+  }
+
+  .action-section h4 {
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: #1e293b;
+    font-size: 1.8rem;
+  }
+
+  .action-section p {
+    color: #64748b;
+    font-size: 1.1rem;
   }
 
   .action-buttons {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
     justify-content: center;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
     flex-wrap: wrap;
   }
 
   .action-btn {
-    padding: 1rem 2rem;
+    padding: 1rem 2.5rem;
     font-size: 1rem;
+    font-weight: 600;
     border-radius: 1rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
+  .action-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .action-btn.btn-primary {
+    background: var(--primary-gradient);
+  }
+
+  .action-btn.btn-success {
+    background: var(--success-gradient);
+  }
+
+  .export-section {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .export-section a {
+    color: #667eea;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .export-section a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .empty-state i {
+    color: #10b981;
+    margin-bottom: 1.5rem;
+  }
+
+  .empty-state h5 {
+    color: #1e293b;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  /* Responsive Design */
   @media (max-width: 768px) {
+    .page-container {
+      padding: 1rem;
+    }
+
+    .recommendations-header {
+      padding: 2rem 1rem;
+    }
+
+    .recommendations-header h2 {
+      font-size: 1.75rem;
+    }
+
     .stats-summary {
       grid-template-columns: 1fr;
+      gap: 1rem;
     }
-    
+
+    .stat-box h3 {
+      font-size: 2.5rem;
+    }
+
+    .category-item {
+      flex-wrap: wrap;
+    }
+
+    .category-bar {
+      width: 100%;
+      order: 3;
+    }
+
     .action-buttons {
       flex-direction: column;
     }
-    
+
     .action-btn {
       width: 100%;
     }
   }
+
+  /* Print Styles */
+  @media print {
+
+    .action-section,
+    .export-section {
+      display: none;
+    }
+
+    .recommendation-card {
+      page-break-inside: avoid;
+    }
+  }
 </style>
 
-<!-- Header -->
-<div class="recommendations-header">
-  <h2>
-    <i class="fas fa-lightbulb"></i>
-    Actionable Recommendations
-  </h2>
-  <p class="text-muted mb-0">Data-driven insights for {{ restaurant }}</p>
-</div>
+<div class="page-container">
+  <!-- Header -->
+  <div class="recommendations-header">
+    <h2>
+      <i class="fas fa-lightbulb"></i>
+      AI-Powered Recommendations
+    </h2>
+    <p class="mb-0">Smart insights for {{ restaurant }}</p>
+  </div>
 
-<!-- Statistics Summary -->
-<div class="stats-summary">
-  <div class="stat-box">
-    <h3>{{ sentiment_counts.Positive or 0 }}</h3>
-    <p><i class="fas fa-smile"></i> Positive Reviews</p>
-  </div>
-  
-  <div class="stat-box" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
-    <h3>{{ sentiment_counts.Negative or 0 }}</h3>
-    <p><i class="fas fa-frown"></i> Negative Reviews</p>
-  </div>
-  
-  <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-    <h3>{{ sentiment_counts.Neutral or 0 }}</h3>
-    <p><i class="fas fa-meh"></i> Neutral Reviews</p>
-  </div>
-</div>
-
-<!-- Category Breakdown -->
-{% if category_counts %}
-<div class="category-breakdown">
-  <h4 class="fw-bold mb-3">
-    <i class="fas fa-chart-bar"></i>
-    Complaint Category Analysis
-  </h4>
-  
-  {% set total = sentiment_counts.Positive + sentiment_counts.Negative + sentiment_counts.Neutral %}
-  {% for category, count in category_counts.items() %}
-  <div class="category-item">
-    <span class="category-name">
-      <i class="fas fa-tag"></i>
-      {{ category.replace('_', ' ').title() }}
-    </span>
-    <div class="category-bar">
-      <div class="category-bar-fill" style="width: {{ (count / total * 100) if total > 0 else 0 }}%"></div>
+  <!-- Statistics Summary -->
+  <div class="stats-summary">
+    <div class="stat-box positive">
+      <div class="stat-icon">
+        <i class="fas fa-smile"></i>
+      </div>
+      <h3>{{ sentiment_counts.Positive or 0 }}</h3>
+      <p>Positive Reviews</p>
     </div>
-    <span class="badge bg-primary">{{ count }} mentions</span>
+
+    <div class="stat-box negative">
+      <div class="stat-icon">
+        <i class="fas fa-frown"></i>
+      </div>
+      <h3>{{ sentiment_counts.Negative or 0 }}</h3>
+      <p>Negative Reviews</p>
+    </div>
+
+    <div class="stat-box neutral">
+      <div class="stat-icon">
+        <i class="fas fa-meh"></i>
+      </div>
+      <h3>{{ sentiment_counts.Neutral or 0 }}</h3>
+      <p>Neutral Reviews</p>
+    </div>
   </div>
-  {% endfor %}
-</div>
-{% endif %}
 
-<!-- Recommendations -->
-<h3 class="text-center mb-4 fw-bold">
-  <i class="fas fa-tasks"></i>
-  Priority Action Items
-</h3>
+  <!-- Category Breakdown -->
+  {% if category_counts %}
+  <div class="category-breakdown">
+    <h4>
+      <i class="fas fa-chart-pie"></i>
+      Complaint Category Analysis
+    </h4>
 
-{% if recommendations %}
-  {% for rec in recommendations %}
-  <div class="recommendation-card priority-{{ rec.priority if rec.priority else 'MEDIUM' }}">
-    <div>
+    {% set total = sentiment_counts.Positive + sentiment_counts.Negative + sentiment_counts.Neutral %}
+    {% for category, count in category_counts.items() %}
+    <div class="category-item">
+      <div class="category-icon">
+        <i class="fas fa-tag"></i>
+      </div>
+      <span class="category-name">
+        {{ category.replace('_', ' ').title() }}
+      </span>
+      <div class="category-bar">
+        <div class="category-bar-fill" style="width: {{ (count / total * 100) if total > 0 else 0 }}%"></div>
+      </div>
+      <span class="category-count">{{ count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Recommendations -->
+  <div class="recommendations-section">
+    <h3 class="section-title">
+      <i class="fas fa-tasks"></i>
+      Priority Action Items
+    </h3>
+
+    {% if recommendations %}
+    {% for rec in recommendations %}
+    <div class="recommendation-card priority-{{ rec.priority if rec.priority else 'MEDIUM' }}">
       <span class="priority-badge priority-{{ rec.priority if rec.priority else 'MEDIUM' }}">
+        <i class="fas fa-exclamation-circle"></i>
         {{ rec.priority if rec.priority else 'MEDIUM' }} PRIORITY
       </span>
-      
+
       <p class="recommendation-text">
         {{ rec.recommendation if rec.recommendation else rec }}
       </p>
-      
+
       {% if rec.percentage %}
       <div class="percentage-indicator">
         <i class="fas fa-chart-pie"></i>
-        Affects {{ rec.percentage }}% of reviews
+        <span>Affects {{ rec.percentage }}% of reviews</span>
       </div>
       {% endif %}
     </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-check-circle fa-4x"></i>
+      <h5>Excellent Performance!</h5>
+      <p class="text-muted">No critical issues detected. Your restaurant is performing wonderfully!</p>
+    </div>
+    {% endif %}
   </div>
-  {% endfor %}
-{% else %}
-  <div class="alert alert-info text-center">
-    <i class="fas fa-info-circle fa-2x mb-3"></i>
-    <h5>Great News!</h5>
-    <p class="mb-0">No major issues detected. Keep up the excellent work!</p>
-  </div>
-{% endif %}
 
-<!-- Action Section -->
-<div class="action-section">
-  <h4 class="fw-bold mb-3">
-    <i class="fas fa-rocket"></i>
-    Need More Insights?
-  </h4>
-  <p class="text-muted">
-    Dive deeper into your restaurant's performance with our AI-powered chat assistant
-  </p>
-  
-  <div class="action-buttons">
-    <a href="{{ url_for('chat') }}" class="btn btn-primary action-btn">
-      <i class="fas fa-comments"></i>
-      Chat with AI Assistant
-    </a>
-    
-    <a href="{{ url_for('results', restaurant_name=restaurant) }}" class="btn btn-success action-btn">
-      <i class="fas fa-chart-line"></i>
-      View Full Analysis
-    </a>
-    
-    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary action-btn">
-      <i class="fas fa-home"></i>
-      Back to Home
-    </a>
-  </div>
-</div>
+  <!-- Action Section -->
+  <div class="action-section">
+    <h4>
+      <i class="fas fa-rocket"></i>
+      Take Your Analysis Further
+    </h4>
+    <p>
+      Explore deeper insights with our AI-powered analytics platform
+    </p>
 
-<!-- Export Options -->
-<div class="text-center mt-4">
-  <p class="text-muted">
-    <i class="fas fa-download"></i>
-    Want to export this report? 
-    <a href="#" class="text-primary" onclick="window.print(); return false;">
-      Print or Save as PDF
-    </a>
-  </p>
+    <div class="action-buttons">
+      <a href="{{ url_for('chat') }}" class="btn btn-primary action-btn">
+        <i class="fas fa-comments"></i>
+        <span>Chat with AI Assistant</span>
+      </a>
+
+      <a href="{{ url_for('results', restaurant_name=restaurant) }}" class="btn btn-success action-btn">
+        <i class="fas fa-chart-line"></i>
+        <span>View Full Analysis</span>
+      </a>
+
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary action-btn">
+        <i class="fas fa-home"></i>
+        <span>Back to Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="export-section">
+    <p class="text-muted mb-0">
+      <i class="fas fa-download"></i>
+      Need to share this report?
+      <a href="#" onclick="window.print(); return false;">
+        Export as PDF
+      </a>
+    </p>
+  </div>
 </div>
 
 <script>
-// Animate category bars on load
-document.addEventListener('DOMContentLoaded', function() {
-  const bars = document.querySelectorAll('.category-bar-fill');
-  bars.forEach(bar => {
-    const width = bar.style.width;
-    bar.style.width = '0%';
-    setTimeout(() => {
-      bar.style.width = width;
-    }, 100);
+  // Animate elements on page load
+  document.addEventListener('DOMContentLoaded', function () {
+    // Animate category bars
+    const bars = document.querySelectorAll('.category-bar-fill');
+    bars.forEach((bar, index) => {
+      const width = bar.style.width;
+      bar.style.width = '0%';
+      setTimeout(() => {
+        bar.style.width = width;
+      }, 200 + (index * 100));
+    });
+
+    // Animate stat boxes
+    const statBoxes = document.querySelectorAll('.stat-box');
+    statBoxes.forEach((box, index) => {
+      box.style.opacity = '0';
+      box.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        box.style.transition = 'all 0.5s ease';
+        box.style.opacity = '1';
+        box.style.transform = 'translateY(0)';
+      }, 100 + (index * 150));
+    });
+
+    // Animate recommendation cards
+    const cards = document.querySelectorAll('.recommendation-card');
+    cards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(-20px)';
+      setTimeout(() => {
+        card.style.transition = 'all 0.5s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateX(0)';
+      }, 300 + (index * 100));
+    });
   });
-});
 </script>
 
 {% endblock %}
