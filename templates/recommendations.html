@@ -7,6 +7,7 @@
     --danger-gradient: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
     --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #fa8d3f 100%);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -83,6 +84,38 @@
     opacity: 0.95;
     position: relative;
     z-index: 1;
+  }
+
+  .restaurant-info-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    color: white;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .restaurant-info-item {
+    text-align: center;
+  }
+
+  .restaurant-info-item strong {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .restaurant-info-item span {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
   }
 
   /* Statistics Cards */
@@ -200,6 +233,12 @@
     font-weight: 600;
   }
 
+  .stat-percentage {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin-top: 0.5rem;
+  }
+
   /* Category Breakdown */
   .category-breakdown {
     background: white;
@@ -217,44 +256,67 @@
     font-size: 1.5rem;
   }
 
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
   .category-item {
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 1.25rem;
     border-radius: 1rem;
-    margin-bottom: 1rem;
     background: #f8fafc;
     transition: all 0.3s ease;
+    border-left: 4px solid #667eea;
   }
 
   .category-item:hover {
     background: #f1f5f9;
     transform: translateX(8px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: space-between;
   }
 
   .category-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--primary-gradient);
     color: white;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
   }
 
   .category-name {
-    font-weight: 600;
+    font-weight: 700;
     color: #1e293b;
-    min-width: 150px;
+    flex: 1;
+    font-size: 0.95rem;
+    text-transform: capitalize;
+  }
+
+  .category-count {
+    font-weight: 800;
+    color: #667eea;
+    font-size: 1.3rem;
+    min-width: 50px;
+    text-align: right;
   }
 
   .category-bar {
-    flex: 1;
-    height: 12px;
+    height: 8px;
     background: #e2e8f0;
     border-radius: 1rem;
     overflow: hidden;
@@ -291,12 +353,11 @@
     }
   }
 
-  .category-count {
-    min-width: 80px;
+  .category-percentage {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 600;
     text-align: right;
-    font-weight: 700;
-    color: #667eea;
-    font-size: 1.1rem;
   }
 
   /* Recommendation Cards */
@@ -310,6 +371,32 @@
     color: #1e293b;
     font-weight: 800;
     font-size: 2rem;
+  }
+
+  .recommendations-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 0.5rem 1.25rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 2rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+
+  .filter-btn:hover,
+  .filter-btn.active {
+    border-color: #667eea;
+    background: #f0f4ff;
+    color: #667eea;
   }
 
   .recommendation-card {
@@ -385,6 +472,39 @@
     background: #8b5cf6;
   }
 
+  .recommendation-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .priority-icon {
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .priority-CRITICAL .priority-icon {
+    color: #dc2626;
+  }
+
+  .priority-HIGH .priority-icon {
+    color: #f59e0b;
+  }
+
+  .priority-MEDIUM .priority-icon {
+    color: #3b82f6;
+  }
+
+  .priority-LOW .priority-icon {
+    color: #10b981;
+  }
+
+  .priority-INFO .priority-icon {
+    color: #8b5cf6;
+  }
+
   .priority-badge {
     display: inline-flex;
     align-items: center;
@@ -395,52 +515,135 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    margin-bottom: 1rem;
+    flex-shrink: 0;
   }
 
   .priority-CRITICAL {
-    background: #dc2626;
-    color: white;
+    background: rgba(220, 38, 38, 0.15);
+    color: #dc2626;
   }
 
   .priority-HIGH {
-    background: #f59e0b;
-    color: white;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
   }
 
   .priority-MEDIUM {
-    background: #3b82f6;
-    color: white;
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
   }
 
   .priority-LOW {
-    background: #10b981;
-    color: white;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
   }
 
   .priority-INFO {
-    background: #8b5cf6;
-    color: white;
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+  }
+
+  .recommendation-content {
+    flex: 1;
   }
 
   .recommendation-text {
     font-size: 1.15rem;
     color: #334155;
     line-height: 1.8;
-    margin: 0;
+    margin: 0 0 1rem 0;
+    font-weight: 500;
+  }
+
+  .recommendation-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
   }
 
   .percentage-indicator {
     display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1.25rem;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
     background: rgba(102, 126, 234, 0.1);
     border-radius: 2rem;
     font-weight: 600;
     color: #667eea;
-    margin-top: 1rem;
-    border: 2px solid rgba(102, 126, 234, 0.2);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    font-size: 0.9rem;
+  }
+
+  .percentage-indicator i {
+    font-size: 0.85rem;
+  }
+
+  .category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    background: #f1f5f9;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Insights Panel */
+  .insights-panel {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+    border: 2px solid rgba(102, 126, 234, 0.15);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin: 3rem 0;
+  }
+
+  .insights-panel h4 {
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .insight-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border-left: 4px solid #667eea;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .insight-label {
+    font-size: 0.85rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .insight-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #667eea;
+  }
+
+  .insight-description {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-top: 0.5rem;
   }
 
   /* Action Section */
@@ -484,11 +687,15 @@
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
+    cursor: pointer;
+    text-decoration: none;
+    color: white;
   }
 
   .action-btn:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
+    text-decoration: none;
   }
 
   .action-btn.btn-primary {
@@ -497,6 +704,10 @@
 
   .action-btn.btn-success {
     background: var(--success-gradient);
+  }
+
+  .action-btn.btn-secondary {
+    background: #94a3b8;
   }
 
   .export-section {
@@ -532,12 +743,19 @@
   .empty-state i {
     color: #10b981;
     margin-bottom: 1.5rem;
+    font-size: 4rem;
   }
 
   .empty-state h5 {
     color: #1e293b;
     font-weight: 700;
     margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+
+  .empty-state p {
+    color: #64748b;
+    font-size: 1rem;
   }
 
   /* Responsive Design */
@@ -554,6 +772,10 @@
       font-size: 1.75rem;
     }
 
+    .restaurant-info-card {
+      grid-template-columns: 1fr;
+    }
+
     .stats-summary {
       grid-template-columns: 1fr;
       gap: 1rem;
@@ -563,13 +785,23 @@
       font-size: 2.5rem;
     }
 
+    .categories-grid {
+      grid-template-columns: 1fr;
+    }
+
     .category-item {
-      flex-wrap: wrap;
+      flex-direction: row;
+      align-items: center;
     }
 
     .category-bar {
-      width: 100%;
       order: 3;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    .recommendation-header {
+      flex-direction: column;
     }
 
     .action-buttons {
@@ -579,30 +811,71 @@
     .action-btn {
       width: 100%;
     }
+
+    .insights-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* Print Styles */
   @media print {
 
     .action-section,
-    .export-section {
+    .export-section,
+    .recommendations-filters {
       display: none;
     }
 
     .recommendation-card {
       page-break-inside: avoid;
     }
+
+    .stat-box {
+      page-break-inside: avoid;
+    }
   }
 </style>
 
 <div class="page-container">
-  <!-- Header -->
+  <!-- Header with Restaurant Info -->
   <div class="recommendations-header">
     <h2>
       <i class="fas fa-lightbulb"></i>
       AI-Powered Recommendations
     </h2>
-    <p class="mb-0">Smart insights for {{ restaurant }}</p>
+    <p class="mb-0">Smart insights for <strong>{{ restaurant }}</strong></p>
+
+    {% if restaurant_info %}
+    <div class="restaurant-info-card">
+      {% if restaurant_info.rating %}
+      <div class="restaurant-info-item">
+        <strong>Rating</strong>
+        <span>⭐ {{ restaurant_info.rating }}</span>
+      </div>
+      {% endif %}
+
+      {% if restaurant_info.location %}
+      <div class="restaurant-info-item">
+        <strong>Location</strong>
+        <span>📍 {{ restaurant_info.location }}</span>
+      </div>
+      {% endif %}
+
+      {% if restaurant_info.cuisines %}
+      <div class="restaurant-info-item">
+        <strong>Cuisine</strong>
+        <span>🍽️ {{ restaurant_info.cuisines }}</span>
+      </div>
+      {% endif %}
+
+      {% if restaurant_info.cost %}
+      <div class="restaurant-info-item">
+        <strong>Est. Cost</strong>
+        <span>💰 {{ restaurant_info.cost }}</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
 
   <!-- Statistics Summary -->
@@ -613,6 +886,12 @@
       </div>
       <h3>{{ sentiment_counts.Positive or 0 }}</h3>
       <p>Positive Reviews</p>
+      {% set total_reviews = sentiment_counts.Positive + sentiment_counts.Negative + sentiment_counts.Neutral %}
+      {% if total_reviews > 0 %}
+      <div class="stat-percentage">
+        {{ "%.1f"|format((sentiment_counts.Positive / total_reviews * 100)) }}%
+      </div>
+      {% endif %}
     </div>
 
     <div class="stat-box negative">
@@ -621,6 +900,11 @@
       </div>
       <h3>{{ sentiment_counts.Negative or 0 }}</h3>
       <p>Negative Reviews</p>
+      {% if total_reviews > 0 %}
+      <div class="stat-percentage">
+        {{ "%.1f"|format((sentiment_counts.Negative / total_reviews * 100)) }}%
+      </div>
+      {% endif %}
     </div>
 
     <div class="stat-box neutral">
@@ -629,32 +913,98 @@
       </div>
       <h3>{{ sentiment_counts.Neutral or 0 }}</h3>
       <p>Neutral Reviews</p>
+      {% if total_reviews > 0 %}
+      <div class="stat-percentage">
+        {{ "%.1f"|format((sentiment_counts.Neutral / total_reviews * 100)) }}%
+      </div>
+      {% endif %}
     </div>
   </div>
 
+  <!-- Insights Panel -->
+  {% set total = sentiment_counts.Positive + sentiment_counts.Negative + sentiment_counts.Neutral %}
+  {% if total > 0 %}
+  <div class="insights-panel">
+    <h4>
+      <i class="fas fa-chart-bar"></i>
+      Key Performance Indicators
+    </h4>
+
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="insight-label">Total Reviews Analyzed</div>
+        <div class="insight-value">{{ total }}</div>
+        <div class="insight-description">From multiple data sources</div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-label">Sentiment Score</div>
+        <div class="insight-value">
+          {% set pos_pct = sentiment_counts.Positive / total * 100 %}
+          {{ "%.1f"|format(pos_pct) }}%
+        </div>
+        <div class="insight-description">Positive sentiment ratio</div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-label">Issues Identified</div>
+        <div class="insight-value">{{ category_counts|length }}</div>
+        <div class="insight-description">Complaint categories</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Category Breakdown -->
-  {% if category_counts %}
+  {% if category_counts and category_counts|length > 0 %}
   <div class="category-breakdown">
     <h4>
       <i class="fas fa-chart-pie"></i>
       Complaint Category Analysis
     </h4>
 
-    {% set total = sentiment_counts.Positive + sentiment_counts.Negative + sentiment_counts.Neutral %}
-    {% for category, count in category_counts.items() %}
-    <div class="category-item">
-      <div class="category-icon">
-        <i class="fas fa-tag"></i>
+    <div class="categories-grid">
+      {% set total = sentiment_counts.Positive + sentiment_counts.Negative + sentiment_counts.Neutral %}
+      {% for category, count in category_counts.items() %}
+      <div class="category-item">
+        <div class="category-header">
+          <div class="category-icon">
+            {% if category == 'service' %}
+            <i class="fas fa-user-tie"></i>
+            {% elif category == 'food_quality' %}
+            <i class="fas fa-utensils"></i>
+            {% elif category == 'hygiene' %}
+            <i class="fas fa-soap"></i>
+            {% elif category == 'price' %}
+            <i class="fas fa-tag"></i>
+            {% elif category == 'delivery' %}
+            <i class="fas fa-truck"></i>
+            {% elif category == 'portion' %}
+            <i class="fas fa-bowl"></i>
+            {% elif category == 'ambience' %}
+            <i class="fas fa-music"></i>
+            {% elif category == 'variety' %}
+            <i class="fas fa-book"></i>
+            {% else %}
+            <i class="fas fa-tag"></i>
+            {% endif %}
+          </div>
+          <div class="category-name">
+            {{ category.replace('_', ' ').title() }}
+          </div>
+          <div class="category-count">{{ count }}</div>
+        </div>
+
+        <div class="category-bar">
+          <div class="category-bar-fill" style="width: {{ (count / total * 100) if total > 0 else 0 }}%"></div>
+        </div>
+
+        <div class="category-percentage">
+          {{ "%.1f"|format((count / total * 100)) if total > 0 else 0 }}% of reviews
+        </div>
       </div>
-      <span class="category-name">
-        {{ category.replace('_', ' ').title() }}
-      </span>
-      <div class="category-bar">
-        <div class="category-bar-fill" style="width: {{ (count / total * 100) if total > 0 else 0 }}%"></div>
-      </div>
-      <span class="category-count">{{ count }}</span>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
   {% endif %}
 
@@ -665,31 +1015,78 @@
       Priority Action Items
     </h3>
 
-    {% if recommendations %}
-    {% for rec in recommendations %}
-    <div class="recommendation-card priority-{{ rec.priority if rec.priority else 'MEDIUM' }}">
-      <span class="priority-badge priority-{{ rec.priority if rec.priority else 'MEDIUM' }}">
+    <!-- Filter Buttons -->
+    <div class="recommendations-filters">
+      <button class="filter-btn active" onclick="filterRecommendations('all')">
+        <i class="fas fa-list"></i>
+        All Recommendations
+      </button>
+      <button class="filter-btn" onclick="filterRecommendations('CRITICAL')">
         <i class="fas fa-exclamation-circle"></i>
-        {{ rec.priority if rec.priority else 'MEDIUM' }} PRIORITY
-      </span>
-
-      <p class="recommendation-text">
-        {{ rec.recommendation if rec.recommendation else rec }}
-      </p>
-
-      {% if rec.percentage %}
-      <div class="percentage-indicator">
-        <i class="fas fa-chart-pie"></i>
-        <span>Affects {{ rec.percentage }}% of reviews</span>
-      </div>
-      {% endif %}
+        Critical Only
+      </button>
+      <button class="filter-btn" onclick="filterRecommendations('HIGH')">
+        <i class="fas fa-arrow-up"></i>
+        High Priority
+      </button>
     </div>
-    {% endfor %}
+
+    {% if recommendations and recommendations|length > 0 %}
+    <div id="recommendations-container">
+      {% for rec in recommendations %}
+      <div class="recommendation-card priority-{{ rec.priority if rec.priority else 'MEDIUM' }}"
+        data-priority="{{ rec.priority if rec.priority else 'MEDIUM' }}">
+
+        <div class="recommendation-header">
+          <div class="priority-icon">
+            {% if rec.priority == 'CRITICAL' %}
+            <i class="fas fa-skull-crossbones"></i>
+            {% elif rec.priority == 'HIGH' %}
+            <i class="fas fa-exclamation-triangle"></i>
+            {% elif rec.priority == 'MEDIUM' %}
+            <i class="fas fa-info-circle"></i>
+            {% elif rec.priority == 'LOW' %}
+            <i class="fas fa-check-circle"></i>
+            {% else %}
+            <i class="fas fa-lightbulb"></i>
+            {% endif %}
+          </div>
+
+          <div class="recommendation-content" style="flex: 1;">
+            <div class="priority-badge priority-{{ rec.priority if rec.priority else 'MEDIUM' }}">
+              {{ rec.priority if rec.priority else 'MEDIUM' }} PRIORITY
+            </div>
+          </div>
+        </div>
+
+        <p class="recommendation-text">
+          {{ rec.recommendation if rec.recommendation else rec }}
+        </p>
+
+        <div class="recommendation-meta">
+          {% if rec.percentage %}
+          <div class="percentage-indicator">
+            <i class="fas fa-chart-pie"></i>
+            <span>{{ rec.percentage }}% of reviews</span>
+          </div>
+          {% endif %}
+
+          {% if rec.category and rec.category != 'overall' and rec.category != 'sentiment' %}
+          <div class="category-tag">
+            <i class="fas fa-tag"></i>
+            <span>{{ rec.category.replace('_', ' ').title() }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
     {% else %}
     <div class="empty-state">
-      <i class="fas fa-check-circle fa-4x"></i>
+      <i class="fas fa-check-circle"></i>
       <h5>Excellent Performance!</h5>
-      <p class="text-muted">No critical issues detected. Your restaurant is performing wonderfully!</p>
+      <p>No critical issues detected. Your restaurant is performing excellently! Continue maintaining quality standards.
+      </p>
     </div>
     {% endif %}
   </div>
@@ -705,17 +1102,17 @@
     </p>
 
     <div class="action-buttons">
-      <a href="{{ url_for('chat') }}" class="btn btn-primary action-btn">
+      <a href="{{ url_for('chat') }}" class="action-btn btn-primary">
         <i class="fas fa-comments"></i>
         <span>Chat with AI Assistant</span>
       </a>
 
-      <a href="{{ url_for('results', restaurant_name=restaurant) }}" class="btn btn-success action-btn">
+      <a href="{{ url_for('results', restaurant_name=restaurant) }}" class="action-btn btn-success">
         <i class="fas fa-chart-line"></i>
         <span>View Full Analysis</span>
       </a>
 
-      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary action-btn">
+      <a href="{{ url_for('index') }}" class="action-btn btn-secondary">
         <i class="fas fa-home"></i>
         <span>Back to Dashboard</span>
       </a>
@@ -727,7 +1124,7 @@
     <p class="text-muted mb-0">
       <i class="fas fa-download"></i>
       Need to share this report?
-      <a href="#" onclick="window.print(); return false;">
+      <a href="#" onclick="exportReport(); return false;">
         Export as PDF
       </a>
     </p>
@@ -735,6 +1132,52 @@
 </div>
 
 <script>
+  // Filter recommendations by priority
+  function filterRecommendations(priority) {
+    const cards = document.querySelectorAll('.recommendation-card');
+    const buttons = document.querySelectorAll('.filter-btn');
+
+    // Update button states
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.filter-btn').classList.add('active');
+
+    // Filter cards
+    cards.forEach(card => {
+      const cardPriority = card.getAttribute('data-priority');
+      if (priority === 'all' || cardPriority === priority) {
+        card.style.display = 'block';
+        setTimeout(() => {
+          card.style.opacity = '1';
+        }, 10);
+      } else {
+        card.style.opacity = '0';
+        setTimeout(() => {
+          card.style.display = 'none';
+        }, 300);
+      }
+    });
+  }
+
+  // Export report as PDF
+  function exportReport() {
+    const element = document.querySelector('.page-container');
+    const opt = {
+      margin: 10,
+      filename: 'recommendations-report.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+
+    // Check if html2pdf is available
+    if (typeof html2pdf !== 'undefined') {
+      html2pdf().set(opt).from(element).save();
+    } else {
+      // Fallback to print
+      window.print();
+    }
+  }
+
   // Animate elements on page load
   document.addEventListener('DOMContentLoaded', function () {
     // Animate category bars
@@ -769,6 +1212,32 @@
         card.style.opacity = '1';
         card.style.transform = 'translateX(0)';
       }, 300 + (index * 100));
+    });
+
+    // Animate insight cards
+    const insights = document.querySelectorAll('.insight-card');
+    insights.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        card.style.transition = 'all 0.5s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 500 + (index * 100));
+    });
+  });
+
+  // Add smooth scrolling for internal links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
     });
   });
 </script>
