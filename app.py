@@ -65,24 +65,16 @@ def build_or_get_rag(reviews_texts, docs_texts=None):
 
 # ---------------- IMAGE UTILITY ----------------
 def get_restaurant_image(restaurant_name):
-    """Generate unique restaurant image based on restaurant name"""
-    # List of food/restaurant related Unsplash search terms
-    food_terms = [
-        "restaurant-interior", "fine-dining", "food-plating", "restaurant-table",
-        "indian-food", "chinese-food", "italian-food", "mexican-food",
-        "cafe-interior", "bar-restaurant", "outdoor-dining", "restaurant-chef",
-        "gourmet-food", "street-food", "bakery", "pizza-restaurant"
-    ]
+    """Generate unique restaurant-related image for each restaurant"""
+    # Generate a unique number based on restaurant name
+    hash_value = sum(ord(c) * (i + 1) for i, c in enumerate(restaurant_name))
+    unique_id = hash_value % 10000
     
-    # Use restaurant name to generate consistent but varied index
-    hash_value = sum(ord(c) for c in restaurant_name)
-    term_index = hash_value % len(food_terms)
-    seed_value = hash_value % 1000
+    # Use Foodiesfeed API - free food photography specifically for restaurants
+    # Alternative: Use Lorem Flickr with food category
+    # Format: https://loremflickr.com/800/600/food,restaurant/all?random={unique_id}
     
-    search_term = food_terms[term_index]
-    
-    # Generate Unsplash URL with search term and seed for consistency
-    return f"https://source.unsplash.com/800x600/?{search_term}&sig={seed_value}"
+    return f"https://loremflickr.com/800/600/food,restaurant/all?random={unique_id}"
 
 
 # ---------------- CSV PROCESSING UTILITIES ----------------
