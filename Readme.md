@@ -57,14 +57,21 @@ A comprehensive AI-powered restaurant review analysis platform with sentiment an
 
 ## Implementation Screenshots
 
-![AI Chat Assistant 2](images/AI_Chat_Assistant_2.png#ai-chat-assistant-2)
-![AI Chat Assistant](images/AI_Chat_Assistant.png#ai-chat-assistant)
-![Analysis Result](images/Analysis_Result.png#analysis-result)
-![Home Page 2](images/Home_Page_2.png#home-page-2)
-![Home Page](images/Home_Page.png#home-page)
-![Recommendation List](images/Recommendation_List.png#recommendation-list)
-![Visual Analytics Dashboard 2](images/Visual_Analytics_Dashboard_2.png#visual-analytics-dashboard-2)
-![Visual Analytics Dashboard](images/Visual_Analytics_Dashboard.png#visual-analytics-dashboard)
+### Home_Page
+![Home Page](images/Home_Page.png)
+![Home Page 2](images/Home_Page_2.png)
+
+### Analysis_Report
+![Analysis Result](images/Analysis_Result.png)
+![Visual Analytics Dashboard](images/Visual_Analytics_Dashboard.png)
+![Visual Analytics Dashboard 2](images/Visual_Analytics_Dashboard_2.png)
+
+### Recommendation-List
+![Recommendation List](images/Recommendation_List.png)
+
+### AI-Chat-Assistant
+![AI Chat Assistant](images/AI_Chat_Assistant.png)
+![AI Chat Assistant 2](images/AI_Chat_Assistant_2.png)
 
 ## 🏗️ System Architecture
 
