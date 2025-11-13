@@ -56,7 +56,7 @@ vector_db/
 cache/
 *.pkl
 *.pickle
-uploads/
+ add .ploads/
 *.csv
 datasets
 datasets/*.csv
