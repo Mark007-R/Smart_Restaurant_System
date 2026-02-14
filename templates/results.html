@@ -677,7 +677,13 @@
                 <div class="stat-icon">
                     <i class="fas fa-utensils"></i>
                 </div>
-                <h3 style="font-size: 1.2rem;">{{ visualizations.kpi_metrics.cuisines[:20] }}{{ '...' if visualizations.kpi_metrics.cuisines|length > 20 else '' }}</h3>
+                <h3 style="font-size: 1.2rem;">
+                    {% if visualizations.kpi_metrics.cuisines and visualizations.kpi_metrics.cuisines != 'N/A' %}
+                        {{ visualizations.kpi_metrics.cuisines[:20] }}{{ '...' if visualizations.kpi_metrics.cuisines|length > 20 else '' }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </h3>
                 <p>Cuisine Type</p>
             </div>
         </div>

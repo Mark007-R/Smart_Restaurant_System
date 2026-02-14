@@ -196,9 +196,9 @@ def generate_visualizations(reviews):
         'avg_cost': 'N/A',
         'online_order': 'N/A',
         'table_booking': 'N/A',
-        'address': restaurant_info.get('address', 'N/A'),
+        'address': restaurant_info.get('address') or 'N/A',
         'location': 'N/A',
-        'cuisines': restaurant_info.get('cuisines', 'N/A')
+        'cuisines': restaurant_info.get('cuisines') or 'N/A'
     }
     
     rating_list = [r.rating for r in reviews if hasattr(r, 'rating') and r.rating]
@@ -423,7 +423,7 @@ def generate_visualizations(reviews):
     
     if sentiment_scores:
         fig, ax = plt.subplots(figsize=(13, 6))
-        sorted_scores = sorted(sentiment_scores)
+        sorted_scores = np.array(sorted(sentiment_scores))
         window = max(3, len(sorted_scores) // 10)
         moving_avg = pd.Series(sorted_scores).rolling(window=window, center=True).mean()
         
