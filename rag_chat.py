@@ -20,28 +20,24 @@ except ImportError:
 
 class RAGChat:
     def __init__(self, data_folder="datasets", vector_db_folder="vector_db"):
-        self.model = None  # Sentence transformer model
+        self.model = None
         self.doc_texts = []
         self.doc_metadata = []
-        self.faiss_index = None  # FAISS index
-        self.embedding_dimension = 384  # Default for 'all-MiniLM-L6-v2'
+        self.faiss_index = None
+        self.embedding_dimension = 384
         self.data_folder = data_folder
         self.vector_db_folder = vector_db_folder
         self.loaded = False
         self.current_restaurant = None
         
-        # Create vector DB folder
         if not os.path.exists(vector_db_folder):
             os.makedirs(vector_db_folder, exist_ok=True)
         
-        # Initialize embedding model
         self._initialize_model()
 
     def _initialize_model(self):
-        """Initialize sentence transformer model for embeddings"""
         try:
             print("🔄 Loading embedding model...")
-            # Using a lightweight but powerful model
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.embedding_dimension = self.model.get_sentence_embedding_dimension()
             print(f"✅ Model loaded! Embedding dimension: {self.embedding_dimension}")
@@ -51,7 +47,6 @@ class RAGChat:
             self.model = None
 
     def _get_vector_db_path(self, restaurant_name):
-        """Generate FAISS index file path"""
         safe_name = re.sub(r'[^\w\s-]', '', restaurant_name).strip().replace(' ', '_')
         return {
             'index': os.path.join(self.vector_db_folder, f"{safe_name}.faiss"),
@@ -59,17 +54,14 @@ class RAGChat:
         }
 
     def _save_vector_db(self, restaurant_name):
-        """Save FAISS index and metadata to disk"""
         if not FAISS_AVAILABLE or self.faiss_index is None:
             return False
         
         try:
             paths = self._get_vector_db_path(restaurant_name)
             
-            # Save FAISS index
             faiss.write_index(self.faiss_index, paths['index'])
             
-            # Save metadata
             metadata = {
                 'doc_texts': self.doc_texts,
                 'doc_metadata': self.doc_metadata,
@@ -87,21 +79,17 @@ class RAGChat:
             return False
 
     def _load_vector_db(self, restaurant_name):
-        """Load FAISS index and metadata from disk"""
         if not FAISS_AVAILABLE:
             return False
         
         try:
             paths = self._get_vector_db_path(restaurant_name)
             
-            # Check if files exist
             if not os.path.exists(paths['index']) or not os.path.exists(paths['metadata']):
                 return False
             
-            # Load FAISS index
             self.faiss_index = faiss.read_index(paths['index'])
             
-            # Load metadata
             with open(paths['metadata'], 'rb') as f:
                 metadata = pickle.load(f)
             
@@ -116,7 +104,6 @@ class RAGChat:
             return False
 
     def extract_reviews_from_zomato_list(self, reviews_list_str):
-        """Extract review texts from Zomato's reviews_list column"""
         reviews = []
         if pd.isna(reviews_list_str) or not reviews_list_str:
             return reviews
@@ -145,7 +132,6 @@ class RAGChat:
         return reviews
 
     def load_mumbaires_csv(self, filepath, restaurant_name=None):
-        """Load reviews from mumbaires.csv"""
         reviews = []
         try:
             df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -173,7 +159,6 @@ class RAGChat:
         return reviews
 
     def load_resreviews_csv(self, filepath, restaurant_name=None):
-        """Load reviews from Resreviews.csv"""
         reviews = []
         try:
             df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -202,7 +187,6 @@ class RAGChat:
         return reviews
 
     def load_reviews_csv(self, filepath, restaurant_name=None):
-        """Load reviews from reviews.csv"""
         reviews = []
         try:
             df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -231,7 +215,6 @@ class RAGChat:
         return reviews
 
     def load_zomato_csv(self, filepath, restaurant_name=None):
-        """Load reviews from zomato.csv"""
         reviews = []
         try:
             df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -263,7 +246,6 @@ class RAGChat:
         return reviews
 
     def load_zomato2_csv(self, filepath, restaurant_name=None):
-        """Load reviews from zomato2.csv"""
         reviews = []
         try:
             df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -300,7 +282,6 @@ class RAGChat:
         return reviews
 
     def load_csv_data(self, restaurant_name=None):
-        """Load all review CSVs from datasets folder"""
         all_reviews = []
         
         if not os.path.exists(self.data_folder):
@@ -331,9 +312,6 @@ class RAGChat:
         return all_reviews
 
     def index_documents(self, texts, metadata=None):
-        """
-        Create vector embeddings and store in FAISS index
-        """
         if self.model is None:
             print("❌ Embedding model not loaded. Cannot create vectors.")
             return
@@ -342,7 +320,6 @@ class RAGChat:
             print("❌ FAISS not available. Install with: pip install faiss-cpu")
             return
         
-        # Filter valid texts
         valid_indices = [i for i, t in enumerate(texts) if t and len(str(t)) > 20]
         self.doc_texts = [texts[i] for i in valid_indices]
         
@@ -357,53 +334,41 @@ class RAGChat:
         
         print(f"🔄 Creating embeddings for {len(self.doc_texts)} documents...")
         
-        # Create embeddings using sentence transformer
         embeddings = self.model.encode(
             self.doc_texts,
             show_progress_bar=True,
             convert_to_numpy=True,
-            normalize_embeddings=True  # L2 normalization for cosine similarity
+            normalize_embeddings=True
         )
         
-        # Create FAISS index (IndexFlatIP for cosine similarity with normalized vectors)
         self.faiss_index = faiss.IndexFlatIP(self.embedding_dimension)
         
-        # Add vectors to FAISS index
         self.faiss_index.add(embeddings.astype('float32'))
         
         print(f"✅ Indexed {self.faiss_index.ntotal} documents in FAISS")
         print(f"✅ Vector dimension: {self.embedding_dimension}")
         
-        # Save to disk
         if self.current_restaurant:
             self._save_vector_db(self.current_restaurant)
 
     def semantic_search(self, query, top_k=5):
-        """
-        Perform semantic search using FAISS
-        Returns top-k most relevant documents with similarity scores
-        """
         if self.faiss_index is None or self.model is None:
             return [], []
         
         try:
-            # Create query embedding
             query_embedding = self.model.encode(
                 [query],
                 convert_to_numpy=True,
                 normalize_embeddings=True
             ).astype('float32')
             
-            # Search in FAISS index
-            # IndexFlatIP returns inner product (cosine similarity for normalized vectors)
             scores, indices = self.faiss_index.search(query_embedding, top_k)
             
-            # Convert to results
             results = []
             score_list = []
             
             for score, idx in zip(scores[0], indices[0]):
-                if idx < len(self.doc_texts):  # Valid index
+                if idx < len(self.doc_texts):
                     results.append({
                         'text': self.doc_texts[idx],
                         'metadata': self.doc_metadata[idx],
@@ -418,19 +383,13 @@ class RAGChat:
             return [], []
 
     def answer_query(self, query, restaurant_name=None, top_k=5):
-        """
-        Answer query using RAG with FAISS vector search
-        """
-        # Load data if needed
         if not self.loaded or (restaurant_name and restaurant_name != self.current_restaurant):
             print(f"📥 Loading reviews for '{restaurant_name}'...")
             
-            # Try loading from FAISS vector DB
             if restaurant_name and self._load_vector_db(restaurant_name):
                 self.loaded = True
                 self.current_restaurant = restaurant_name
             else:
-                # Load from CSV and create vectors
                 reviews = self.load_csv_data(restaurant_name)
                 
                 if reviews:
@@ -439,29 +398,23 @@ class RAGChat:
                 else:
                     return "❌ No reviews found for this restaurant in the datasets.", []
 
-        # Check if we have indexed documents
         if self.faiss_index is None or self.model is None:
             return "❌ No indexed reviews available. Please analyze the restaurant first.", []
 
-        # Perform semantic search using FAISS
         retrieved_docs, scores = self.semantic_search(query, top_k=top_k)
         
         if not retrieved_docs:
-            # Fallback to web search
             web_answer = self._search_google_fallback(query, restaurant_name)
             return web_answer, []
         
-        # Generate answer from retrieved context
         answer = self._generate_answer(query, retrieved_docs, scores, restaurant_name)
         source_texts = [doc['text'] for doc in retrieved_docs]
         
         return answer, source_texts
 
     def _generate_answer(self, query, retrieved_docs, scores, restaurant_name):
-        """Generate comprehensive answer using retrieved documents"""
         query_lower = query.lower()
         
-        # Detect query intent
         intents = {
             'quality': ['quality', 'taste', 'food', 'delicious', 'flavor'],
             'service': ['service', 'staff', 'waiter', 'wait', 'server'],
@@ -477,11 +430,9 @@ class RAGChat:
                 detected_intent = intent
                 break
         
-        # Build answer
         restaurant_phrase = f"**{restaurant_name}**" if restaurant_name else "this restaurant"
         answer = f"💬 Based on {len(retrieved_docs)} relevant reviews about {restaurant_phrase}:\n\n"
         
-        # Add top retrieved reviews with similarity scores
         answer += "**📋 Most Relevant Reviews (by FAISS similarity):**\n"
         for i, (doc, score) in enumerate(zip(retrieved_docs, scores), 1):
             text = doc['text']
@@ -495,7 +446,6 @@ class RAGChat:
             answer += f"\n**{i}.** {snippet}"
             answer += f"\n   📊 Similarity: {relevance}% | ⭐ Rating: {rating} | 📁 Source: {source}\n"
         
-        # Generate intelligent summary
         answer += "\n**🎯 AI Summary:**\n"
         summary = self._synthesize_intelligent_answer(
             query, retrieved_docs, detected_intent
@@ -505,10 +455,8 @@ class RAGChat:
         return answer
 
     def _synthesize_intelligent_answer(self, query, retrieved_docs, intent):
-        """Generate intelligent summary based on retrieved context"""
         all_text = " ".join([doc['text'].lower() for doc in retrieved_docs])
         
-        # Sentiment analysis
         positive_words = ['good', 'great', 'excellent', 'amazing', 'delicious', 'perfect', 
                          'wonderful', 'fantastic', 'love', 'best', 'awesome', 'outstanding']
         negative_words = ['bad', 'poor', 'terrible', 'horrible', 'awful', 'worst', 
@@ -517,10 +465,8 @@ class RAGChat:
         pos_count = sum(all_text.count(word) for word in positive_words)
         neg_count = sum(all_text.count(word) for word in negative_words)
         
-        # Extract key terms
         key_terms = self._extract_key_terms([doc['text'] for doc in retrieved_docs])
         
-        # Calculate average rating
         ratings = [doc['metadata'].get('rating') for doc in retrieved_docs 
                   if doc['metadata'].get('rating')]
         avg_rating = None
@@ -529,7 +475,6 @@ class RAGChat:
             if valid_ratings:
                 avg_rating = sum(valid_ratings) / len(valid_ratings)
         
-        # Build intelligent summary based on intent
         summary = ""
         
         if intent == 'quality':
@@ -590,7 +535,6 @@ class RAGChat:
                 summary += f"\n   Overall Rating: **{avg_rating:.1f}/5**"
         
         else:
-            # General query
             if pos_count > neg_count * 1.5:
                 summary = "✅ **Overall positive sentiment** in reviews. "
             elif pos_count > neg_count:
@@ -603,7 +547,6 @@ class RAGChat:
         return summary
 
     def _extract_key_terms(self, texts):
-        """Extract most important terms from texts"""
         stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
                     'of', 'with', 'by', 'from', 'is', 'was', 'are', 'were', 'been', 'be',
                     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
@@ -619,7 +562,6 @@ class RAGChat:
         return [word for word, _ in counter.most_common(12)]
 
     def _search_google_fallback(self, query, restaurant_name=None):
-        """Fallback web search when local data doesn't match"""
         try:
             search_query = f"{restaurant_name} {query}" if restaurant_name else query
             url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}"
@@ -652,7 +594,6 @@ class RAGChat:
                    f"Error searching online: {str(e)}")
 
     def get_statistics(self):
-        """Get statistics about FAISS vector database"""
         if not self.doc_texts:
             return "No documents indexed."
         

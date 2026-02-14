@@ -7,7 +7,7 @@
         margin: 0 auto;
     }
 
-    /* Chat Header */
+    
     .chat-header {
         text-align: center;
         padding: 2.5rem;
@@ -81,7 +81,7 @@
         z-index: 1;
     }
 
-    /* Chat Info Card */
+    
     .chat-info {
         background: white;
         padding: 1.5rem 2rem;
@@ -154,7 +154,7 @@
         font-size: 0.9rem;
     }
 
-    /* Chat Box */
+    
     #chat-box {
         background: white;
         border-radius: 1.5rem;
@@ -185,7 +185,7 @@
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
     }
 
-    /* Messages */
+    
     .message {
         margin-bottom: 2rem;
         animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -292,7 +292,7 @@
         color: #94a3b8;
     }
 
-    /* Chat Form */
+    
     #chat-form {
         background: white;
         padding: 1.25rem;
@@ -383,7 +383,7 @@
         opacity: 0.6;
     }
 
-    /* Typing Indicator */
+    
     .typing-indicator {
         display: none;
         align-items: center;
@@ -433,7 +433,7 @@
         }
     }
 
-    /* Suggested Questions */
+    
     .suggested-questions {
         background: white;
         padding: 2rem;
@@ -486,7 +486,7 @@
         border-color: transparent;
     }
 
-    /* Empty Chat State */
+    
     .empty-chat {
         text-align: center;
         padding: 4rem 2rem;
@@ -515,7 +515,7 @@
         color: #64748b;
     }
 
-    /* RAG Source Badge */
+    
     .rag-badge {
         display: inline-flex;
         align-items: center;
@@ -533,7 +533,7 @@
         font-size: 1rem;
     }
 
-    /* Voice Input Button (Future Enhancement) */
+    
     .voice-btn {
         width: 45px;
         height: 45px;
@@ -554,7 +554,7 @@
         transform: scale(1.1);
     }
 
-    /* Responsive Design */
+    
     @media (max-width: 768px) {
         .chat-header h2 {
             font-size: 1.75rem;
@@ -585,7 +585,7 @@
         }
     }
 
-    /* Loading Animation */
+    
     @keyframes shimmer {
         0% {
             background-position: -1000px 0;
@@ -607,7 +607,7 @@
 </style>
 
 <div class="chat-container" data-aos="fade-up">
-    <!-- Chat Header -->
+    
     <div class="chat-header" data-aos="zoom-in">
         <h2>
             <i class="fas fa-robot"></i>
@@ -616,7 +616,7 @@
         <p class="mb-0">Powered by FAISS Vector Search & RAG Technology</p>
     </div>
 
-    <!-- Chat Info -->
+    
     {% if restaurant %}
     <div class="chat-info" data-aos="fade-right">
         <div class="chat-info-icon">
@@ -642,7 +642,7 @@
     </div>
     {% endif %}
 
-    <!-- Chat Box -->
+    
     <div id="chat-box" data-aos="fade-up" data-aos-delay="100">
         <div class="empty-chat">
             <i class="fas fa-comments"></i>
@@ -651,7 +651,7 @@
         </div>
     </div>
 
-    <!-- Typing Indicator -->
+    
     <div class="typing-indicator" id="typingIndicator">
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
@@ -661,7 +661,7 @@
         </span>
     </div>
 
-    <!-- Chat Form -->
+    
     <form id="chat-form" data-aos="fade-up" data-aos-delay="200">
         <input type="text" id="question" name="question"
             placeholder="Ask about food quality, service, pricing, recommendations..." required autocomplete="off"
@@ -671,7 +671,7 @@
         </button>
     </form>
 
-    <!-- Suggested Questions -->
+    
     <div class="suggested-questions" data-aos="fade-up" data-aos-delay="300">
         <h5>
             <i class="fas fa-lightbulb"></i>

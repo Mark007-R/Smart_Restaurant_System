@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import warnings
 warnings.filterwarnings('ignore')
 
-# Headers for web scraping
 HEADERS_LIST = [
     {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
     {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"},
@@ -23,71 +22,58 @@ HEADERS_LIST = [
 
 DATASET_FOLDER = "datasets"
 
-# Quality thresholds
 MIN_REVIEW_LENGTH = 30
 MAX_REVIEW_LENGTH = 2000
 MIN_WORD_COUNT = 5
 
 def get_headers():
-    """Return random headers for web scraping"""
     return random.choice(HEADERS_LIST)
 
 def smart_delay(min_delay=0.5, max_delay=2.0):
-    """Intelligent delay with randomization to avoid detection"""
     delay = min_delay + random.random() * (max_delay - min_delay)
     time.sleep(delay)
 
 def clean_text(txt):
-    """Enhanced text cleaning with better whitespace handling"""
     if not txt:
         return ""
     
-    # Remove excess whitespace
     txt = re.sub(r'\s+', ' ', str(txt)).strip()
     
-    # Remove non-printable characters but keep common punctuation
     txt = re.sub(r'[^\x20-\x7E\n\t]', '', txt)
     
-    # Remove multiple consecutive punctuation
     txt = re.sub(r'([.!?])\1+', r'\1', txt)
     
-    # Fix spacing around punctuation
     txt = re.sub(r'\s+([.,!?;:])', r'\1', txt)
     txt = re.sub(r'([.,!?;:])\s*([.,!?;:])', r'\1 \2', txt)
     
     return txt.strip()
 
 def is_valid_review(text, min_length=MIN_REVIEW_LENGTH, max_length=MAX_REVIEW_LENGTH):
-    """Enhanced review validation with multiple quality checks"""
     if not text or not isinstance(text, str):
         return False
     
     text = text.strip()
     
-    # Length checks
     if len(text) < min_length or len(text) > max_length:
         return False
     
-    # Word count check
     words = text.split()
     if len(words) < MIN_WORD_COUNT:
         return False
     
-    # Must contain letters
     if not re.search(r'[a-zA-Z]', text):
         return False
     
-    # Filter out common non-review patterns
     invalid_patterns = [
         r'^(copyright|privacy|terms|conditions|policy|disclaimer)',
         r'^(login|sign up|register|subscribe|newsletter)',
         r'^(home|about|contact|menu|reservation|book|order)',
-        r'^\d+$',  # Just numbers
-        r'^[^a-zA-Z]+$',  # No letters
+        r'^\d+$',
+        r'^[^a-zA-Z]+$',
         r'^(photo|image|video|gallery)',
         r'^(facebook|twitter|instagram|social)',
         r'(cookie|gdpr|accept|decline)\s*(policy|notice)',
-        r'^\s*[\d\W]+\s*$',  # Only digits and special chars
+        r'^\s*[\d\W]+\s*$',
     ]
     
     text_lower = text.lower()
@@ -95,27 +81,22 @@ def is_valid_review(text, min_length=MIN_REVIEW_LENGTH, max_length=MAX_REVIEW_LE
         if re.search(pattern, text_lower):
             return False
     
-    # Check for minimum sentence structure
     if not re.search(r'[.!?]', text):
-        # If no sentence endings, check for reasonable content
         if len(words) < 10:
             return False
     
-    # Calculate letter to total character ratio
     letter_count = sum(c.isalpha() for c in text)
-    if letter_count / len(text) < 0.5:  # Less than 50% letters
+    if letter_count / len(text) < 0.5:
         return False
     
     return True
 
 def calculate_review_quality_score(text):
-    """Calculate a quality score for a review (0-100)"""
     if not text:
         return 0
     
-    score = 50  # Base score
+    score = 50
     
-    # Length bonus (sweet spot is 100-500 chars)
     length = len(text)
     if 100 <= length <= 500:
         score += 20
@@ -124,17 +105,14 @@ def calculate_review_quality_score(text):
     elif length > 500:
         score += 10
     
-    # Sentence structure bonus
     sentences = len(re.findall(r'[.!?]+', text))
     if sentences >= 2:
         score += 15
     
-    # Vocabulary diversity
     words = text.lower().split()
     unique_ratio = len(set(words)) / len(words) if words else 0
     score += int(unique_ratio * 15)
     
-    # Food/restaurant keywords bonus
     food_keywords = ['food', 'dish', 'menu', 'taste', 'delicious', 'flavor', 
                      'service', 'staff', 'ambience', 'restaurant', 'meal', 
                      'ordered', 'tried', 'recommend', 'experience']
@@ -143,19 +121,12 @@ def calculate_review_quality_score(text):
     
     return min(score, 100)
 
-
-# ============================================================================
-# LOCAL DATASET LOADERS (Priority 1) - Enhanced
-# ============================================================================
-
 def extract_zomato_reviews_list(reviews_list_str):
-    """Extract review texts from Zomato's reviews_list column with better parsing"""
     reviews = []
     if pd.isna(reviews_list_str) or not reviews_list_str:
         return reviews
     
     try:
-        # Try parsing as Python literal
         parsed = ast.literal_eval(reviews_list_str)
         if isinstance(parsed, list):
             for item in parsed:
@@ -171,13 +142,10 @@ def extract_zomato_reviews_list(reviews_list_str):
                         reviews.append(cleaned)
         return reviews
     except:
-        # Enhanced fallback parsing
         try:
-            # Remove brackets and quotes
             cleaned = str(reviews_list_str).replace('[', '').replace(']', '')
             cleaned = re.sub(r'[\'"]+', '', cleaned)
             
-            # Split by common delimiters
             parts = re.split(r'[(),]+', cleaned)
             
             for part in parts:
@@ -189,16 +157,13 @@ def extract_zomato_reviews_list(reviews_list_str):
     
     return reviews
 
-
 def load_mumbaires_reviews(filepath, restaurant_name=None):
-    """Enhanced loader for mumbaires.csv with better error handling"""
     reviews = []
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
         df.columns = df.columns.str.strip()
         
         if restaurant_name:
-            # Case-insensitive fuzzy matching
             mask = df['Restaurant Name'].astype(str).str.contains(
                 restaurant_name, case=False, na=False, regex=False
             )
@@ -225,9 +190,7 @@ def load_mumbaires_reviews(filepath, restaurant_name=None):
     
     return reviews
 
-
 def load_resreviews_reviews(filepath, restaurant_name=None):
-    """Enhanced loader for Resreviews.csv"""
     reviews = []
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -260,9 +223,7 @@ def load_resreviews_reviews(filepath, restaurant_name=None):
     
     return reviews
 
-
 def load_reviews_reviews(filepath, restaurant_name=None):
-    """Enhanced loader for reviews.csv"""
     reviews = []
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -295,9 +256,7 @@ def load_reviews_reviews(filepath, restaurant_name=None):
     
     return reviews
 
-
 def load_zomato_reviews(filepath, restaurant_name=None):
-    """Enhanced loader for zomato.csv with better review extraction"""
     reviews = []
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -313,7 +272,6 @@ def load_zomato_reviews(filepath, restaurant_name=None):
             restaurant = clean_text(row.get('name', ''))
             reviews_list = row.get('reviews_list', '')
             
-            # Extract reviews from the tuple format
             extracted_reviews = extract_zomato_reviews_list(reviews_list)
             
             for review_text in extracted_reviews:
@@ -338,9 +296,7 @@ def load_zomato_reviews(filepath, restaurant_name=None):
     
     return reviews
 
-
 def load_zomato2_reviews(filepath, restaurant_name=None):
-    """Enhanced loader for zomato2.csv with better item aggregation"""
     reviews = []
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
@@ -352,11 +308,9 @@ def load_zomato2_reviews(filepath, restaurant_name=None):
             )
             df = df[mask]
         
-        # Group by restaurant for aggregated insights
         restaurant_groups = df.groupby('Restaurant_Name')
         
         for restaurant, group in restaurant_groups:
-            # Separate best sellers and regular items
             best_sellers = []
             regular_items = []
             
@@ -368,7 +322,6 @@ def load_zomato2_reviews(filepath, restaurant_name=None):
                     else:
                         regular_items.append(item)
             
-            # Create meaningful reviews from items
             if best_sellers:
                 review_text = f"Highly recommended items: {', '.join(best_sellers[:5])}"
                 if len(best_sellers) > 5:
@@ -380,7 +333,7 @@ def load_zomato2_reviews(filepath, restaurant_name=None):
                     'restaurant': restaurant,
                     'rating': avg_rating,
                     'source': 'zomato2.csv',
-                    'quality_score': 70,  # Synthetic but useful
+                    'quality_score': 70,
                     'metadata': {
                         'cuisine': group['Cuisine'].iloc[0] if 'Cuisine' in group.columns else None,
                         'city': group['City'].iloc[0] if 'City' in group.columns else None,
@@ -390,7 +343,6 @@ def load_zomato2_reviews(filepath, restaurant_name=None):
                     }
                 })
             
-            # Add a general menu review
             if regular_items:
                 review_text = f"Menu includes: {', '.join(regular_items[:8])}"
                 if len(regular_items) > 8:
@@ -413,18 +365,13 @@ def load_zomato2_reviews(filepath, restaurant_name=None):
     
     return reviews
 
-
 def load_local_reviews(restaurant_name=None, data_folder=DATASET_FOLDER, max_reviews=100):
-    """
-    Enhanced local review loader with quality scoring and deduplication
-    """
     all_reviews = []
     
     if not os.path.exists(data_folder):
         print(f"❌ Dataset folder '{data_folder}' not found.")
         return all_reviews
     
-    # Define loaders with priority order
     dataset_loaders = {
         "mumbaires.csv": load_mumbaires_reviews,
         "Resreviews.csv": load_resreviews_reviews,
@@ -446,33 +393,22 @@ def load_local_reviews(restaurant_name=None, data_folder=DATASET_FOLDER, max_rev
             except Exception as e:
                 print(f"❌ Error processing {filename}: {e}")
     
-    # Advanced deduplication using text similarity
     unique_reviews = []
     seen_texts = set()
     
     for review in all_reviews:
         text = review['review']
-        # Create a normalized version for comparison
         normalized = re.sub(r'\W+', '', text.lower())
         
         if normalized not in seen_texts:
             seen_texts.add(normalized)
             unique_reviews.append(review)
     
-    # Sort by quality score (if available)
     unique_reviews.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
     
     return unique_reviews[:max_reviews]
 
-
-# ============================================================================
-# WEB SCRAPING FUNCTIONS (Priority 2 - Enhanced)
-# ============================================================================
-
 def scrape_single_url(url, restaurant_name, timeout=10):
-    """
-    Scrape a single URL for reviews - used for parallel scraping
-    """
     results = []
     
     try:
@@ -484,23 +420,19 @@ def scrape_single_url(url, restaurant_name, timeout=10):
         
         soup = BeautifulSoup(response.text, "html.parser")
         
-        # Look for review-like content in multiple tag types
         potential_reviews = []
         
-        # Paragraphs
         for p in soup.find_all("p"):
             text = clean_text(p.get_text())
             if is_valid_review(text, min_length=50):
                 potential_reviews.append(text)
         
-        # Divs with review-like classes
         review_divs = soup.find_all("div", class_=re.compile(r'review|comment|feedback|testimonial', re.I))
         for div in review_divs:
             text = clean_text(div.get_text())
             if is_valid_review(text, min_length=50):
                 potential_reviews.append(text)
         
-        # Filter and score reviews
         for text in potential_reviews:
             if any(word in text.lower() for word in 
                   ['food', 'dish', 'menu', 'service', 'taste', 'delicious', 
@@ -508,7 +440,7 @@ def scrape_single_url(url, restaurant_name, timeout=10):
                 
                 quality_score = calculate_review_quality_score(text)
                 
-                if quality_score >= 50:  # Only keep decent quality reviews
+                if quality_score >= 50:
                     results.append({
                         "source": urlparse(url).netloc,
                         "review": text,
@@ -522,11 +454,7 @@ def scrape_single_url(url, restaurant_name, timeout=10):
     
     return results
 
-
 def scrape_generic_reviews(restaurant_name, max_reviews=20):
-    """
-    Enhanced generic review scraper with parallel processing
-    """
     results = []
     seen = set()
     
@@ -544,7 +472,6 @@ def scrape_generic_reviews(restaurant_name, max_reviews=20):
         soup = BeautifulSoup(response.text, "html.parser")
         links = [a.get("href") for a in soup.find_all("a", href=True)]
         
-        # Filter for quality review sources
         review_links = [
             l for l in links 
             if any(x in l.lower() for x in ["review", "tripadvisor", "zomato", "yelp", 
@@ -554,7 +481,6 @@ def scrape_generic_reviews(restaurant_name, max_reviews=20):
         
         print(f"📍 Found {len(review_links)} potential sources")
 
-        # Parallel scraping for speed
         with ThreadPoolExecutor(max_workers=4) as executor:
             future_to_url = {
                 executor.submit(scrape_single_url, link, restaurant_name): link 
@@ -588,17 +514,12 @@ def scrape_generic_reviews(restaurant_name, max_reviews=20):
         print(f"❌ Generic scraping error: {e}")
         return []
     
-    # Sort by quality
     results.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
     
     print(f"✅ Scraped {len(results)} quality reviews from web")
     return results[:max_reviews]
 
-
 def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
-    """
-    Enhanced Zomato placeholder scraper (limited due to dynamic content)
-    """
     results = []
     seen = set()
     
@@ -616,7 +537,6 @@ def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
 
         soup = BeautifulSoup(response.text, "html.parser")
         
-        # Look for text blocks that might contain reviews
         possible_blocks = soup.find_all(["p", "div", "span"], text=True)
         
         for tag in possible_blocks:
@@ -628,7 +548,6 @@ def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
             if not is_valid_review(text, min_length=50):
                 continue
             
-            # Check for restaurant/food-related keywords
             if re.search(r"\b(food|service|taste|ambience|price|delivery|dish|menu|recommend)\b", text, re.I):
                 normalized = re.sub(r'\W+', '', text.lower())
                 
@@ -653,27 +572,9 @@ def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
     
     return results
 
-
-# ============================================================================
-# UNIFIED FUNCTION (Enhanced with Better Reporting)
-# ============================================================================
-
 def scrape_reviews_combined(restaurant_name, data_folder=DATASET_FOLDER, 
                            max_reviews=50, enable_web_scraping=False,
                            quality_threshold=40):
-    """
-    Enhanced unified review collection with quality filtering
-    
-    Args:
-        restaurant_name: Name of restaurant to search for
-        data_folder: Path to datasets folder
-        max_reviews: Maximum number of reviews to collect
-        enable_web_scraping: Whether to enable web scraping fallback
-        quality_threshold: Minimum quality score (0-100) for reviews
-    
-    Returns:
-        List of high-quality review dictionaries
-    """
     print(f"\n{'='*70}")
     print(f"🔍 RESTAURANT REVIEW COLLECTOR")
     print(f"{'='*70}")
@@ -685,12 +586,10 @@ def scrape_reviews_combined(restaurant_name, data_folder=DATASET_FOLDER,
     
     all_reviews = []
     
-    # PRIORITY 1: Load from local datasets
     print("📂 STEP 1: Searching local datasets...")
     local_reviews = load_local_reviews(restaurant_name, data_folder, max_reviews)
     
     if local_reviews:
-        # Filter by quality
         quality_reviews = [r for r in local_reviews if r.get('quality_score', 0) >= quality_threshold]
         all_reviews.extend(quality_reviews)
         print(f"✅ Found {len(quality_reviews)} quality reviews in local datasets")
@@ -698,17 +597,14 @@ def scrape_reviews_combined(restaurant_name, data_folder=DATASET_FOLDER,
     else:
         print("⚠️  No reviews found in local datasets\n")
     
-    # PRIORITY 2: Web scraping fallback
     if enable_web_scraping and len(all_reviews) < max_reviews:
         remaining = max_reviews - len(all_reviews)
         print(f"🌐 STEP 2: Web scraping fallback (need {remaining} more reviews)...")
         
-        # Try generic sources first (usually better quality)
         generic_reviews = scrape_generic_reviews(restaurant_name, max_reviews=remaining)
         quality_web_reviews = [r for r in generic_reviews if r.get('quality_score', 0) >= quality_threshold]
         all_reviews.extend(quality_web_reviews)
         
-        # Try Zomato if still need more
         if len(all_reviews) < max_reviews:
             remaining = max_reviews - len(all_reviews)
             zomato_reviews = scrape_zomato_placeholder(restaurant_name, max_reviews=remaining)
@@ -721,7 +617,6 @@ def scrape_reviews_combined(restaurant_name, data_folder=DATASET_FOLDER,
         else:
             print("⚠️  No additional quality reviews found on web\n")
     
-    # Calculate statistics
     print(f"{'='*70}")
     print(f"📊 COLLECTION SUMMARY")
     print(f"{'='*70}")
@@ -731,7 +626,6 @@ def scrape_reviews_combined(restaurant_name, data_folder=DATASET_FOLDER,
         avg_quality = sum(r.get('quality_score', 0) for r in all_reviews) / len(all_reviews)
         print(f"Average Quality Score: {avg_quality:.1f}/100")
         
-        # Show source breakdown
         source_counts = {}
         for review in all_reviews:
             source = review.get('source', 'unknown')
@@ -746,13 +640,7 @@ def scrape_reviews_combined(restaurant_name, data_folder=DATASET_FOLDER,
     
     return all_reviews[:max_reviews]
 
-
-# ============================================================================
-# UTILITY FUNCTIONS (Enhanced)
-# ============================================================================
-
 def get_all_restaurants_from_datasets(data_folder=DATASET_FOLDER):
-    """Get list of all unique restaurants with metadata"""
     restaurants = []
     seen_names = set()
     
@@ -775,7 +663,6 @@ def get_all_restaurants_from_datasets(data_folder=DATASET_FOLDER):
                 df.columns = df.columns.str.strip()
                 
                 if name_col in df.columns:
-                    # Get unique restaurants with metadata
                     for _, row in df.iterrows():
                         name = clean_text(str(row.get(name_col, '')))
                         
@@ -787,7 +674,6 @@ def get_all_restaurants_from_datasets(data_folder=DATASET_FOLDER):
                                 'source': filename
                             }
                             
-                            # Add available metadata
                             for meta_col in metadata_cols:
                                 if meta_col in df.columns:
                                     value = row.get(meta_col)
@@ -801,34 +687,24 @@ def get_all_restaurants_from_datasets(data_folder=DATASET_FOLDER):
     
     return sorted(restaurants, key=lambda x: x['name'])
 
-
 def search_restaurants(query, data_folder=DATASET_FOLDER, max_results=10):
-    """
-    Enhanced restaurant search with fuzzy matching and ranking
-    """
     all_restaurants = get_all_restaurants_from_datasets(data_folder)
     query_lower = query.lower()
     
-    # Score each restaurant by relevance
     scored_matches = []
     
     for restaurant in all_restaurants:
         name = restaurant['name']
         name_lower = name.lower()
         
-        # Calculate relevance score
         score = 0
         
-        # Exact match (highest score)
         if query_lower == name_lower:
             score = 100
-        # Starts with query
         elif name_lower.startswith(query_lower):
             score = 80
-        # Contains query
         elif query_lower in name_lower:
             score = 60
-        # Word-level match
         else:
             query_words = set(query_lower.split())
             name_words = set(name_lower.split())
@@ -840,17 +716,11 @@ def search_restaurants(query, data_folder=DATASET_FOLDER, max_results=10):
         if score > 0:
             scored_matches.append((restaurant, score))
     
-    # Sort by score (descending)
     scored_matches.sort(key=lambda x: x[1], reverse=True)
     
-    # Return top matches
     return [match[0] for match in scored_matches[:max_results]]
 
-
 def get_review_statistics(reviews):
-    """
-    Generate comprehensive statistics from a list of reviews
-    """
     if not reviews:
         return {"error": "No reviews provided"}
     
@@ -862,12 +732,10 @@ def get_review_statistics(reviews):
         "content_analysis": {}
     }
     
-    # Source distribution
     for review in reviews:
         source = review.get('source', 'unknown')
         stats["sources"][source] = stats["sources"].get(source, 0) + 1
     
-    # Quality metrics
     quality_scores = [r.get('quality_score', 0) for r in reviews if 'quality_score' in r]
     if quality_scores:
         stats["quality_metrics"] = {
@@ -877,14 +745,12 @@ def get_review_statistics(reviews):
             "high_quality_count": sum(1 for s in quality_scores if s >= 70)
         }
     
-    # Rating analysis
     ratings = [r.get('rating') for r in reviews if r.get('rating') is not None]
     if ratings:
-        # Convert to float and filter valid ratings
         valid_ratings = []
         for r in ratings:
             try:
-                rating_val = float(str(r).split('/')[0])  # Handle "4/5" format
+                rating_val = float(str(r).split('/')[0])
                 if 0 <= rating_val <= 5:
                     valid_ratings.append(rating_val)
             except:
@@ -898,7 +764,6 @@ def get_review_statistics(reviews):
                 "max": max(valid_ratings)
             }
     
-    # Content analysis
     all_text = " ".join([r.get('review', '') for r in reviews])
     words = all_text.lower().split()
     
@@ -910,17 +775,12 @@ def get_review_statistics(reviews):
     
     return stats
 
-
 def export_reviews_to_csv(reviews, output_path="exported_reviews.csv"):
-    """
-    Export reviews to CSV format for further analysis
-    """
     if not reviews:
         print("❌ No reviews to export")
         return False
     
     try:
-        # Flatten the data structure
         flattened_reviews = []
         
         for review in reviews:
@@ -933,14 +793,12 @@ def export_reviews_to_csv(reviews, output_path="exported_reviews.csv"):
                 'reviewer': review.get('reviewer', 'anonymous')
             }
             
-            # Add metadata if exists
             if 'metadata' in review and review['metadata']:
                 for key, value in review['metadata'].items():
                     flat_review[f'meta_{key}'] = value
             
             flattened_reviews.append(flat_review)
         
-        # Create DataFrame and export
         df = pd.DataFrame(flattened_reviews)
         df.to_csv(output_path, index=False, encoding='utf-8')
         
@@ -951,12 +809,7 @@ def export_reviews_to_csv(reviews, output_path="exported_reviews.csv"):
         print(f"❌ Error exporting reviews: {e}")
         return False
 
-
 def deduplicate_reviews(reviews, similarity_threshold=0.85):
-    """
-    Advanced deduplication using text similarity
-    Removes near-duplicate reviews
-    """
     if len(reviews) <= 1:
         return reviews
     
@@ -966,17 +819,13 @@ def deduplicate_reviews(reviews, similarity_threshold=0.85):
     for review in reviews:
         text = review.get('review', '')
         
-        # Create normalized version for comparison
         normalized = re.sub(r'\W+', '', text.lower())
         
-        # Check for exact duplicates
         if normalized in seen_normalized:
             continue
         
-        # Check for near-duplicates (simple approach)
         is_duplicate = False
         for seen_text in seen_normalized:
-            # Calculate simple similarity (character overlap)
             overlap = len(set(normalized) & set(seen_text))
             total_chars = len(set(normalized) | set(seen_text))
             
@@ -996,19 +845,7 @@ def deduplicate_reviews(reviews, similarity_threshold=0.85):
     
     return unique_reviews
 
-
 def filter_reviews_by_keywords(reviews, keywords, mode='include'):
-    """
-    Filter reviews based on keywords
-    
-    Args:
-        reviews: List of review dictionaries
-        keywords: List of keywords to filter by
-        mode: 'include' (keep matching) or 'exclude' (remove matching)
-    
-    Returns:
-        Filtered list of reviews
-    """
     filtered = []
     
     for review in reviews:
@@ -1022,11 +859,7 @@ def filter_reviews_by_keywords(reviews, keywords, mode='include'):
     
     return filtered
 
-
 def get_sentiment_keywords():
-    """
-    Return comprehensive sentiment keyword dictionaries
-    """
     return {
         'positive': [
             'excellent', 'amazing', 'delicious', 'fantastic', 'wonderful',
@@ -1046,16 +879,8 @@ def get_sentiment_keywords():
         ]
     }
 
-
-# ============================================================================
-# BATCH PROCESSING UTILITIES
-# ============================================================================
-
 def batch_load_reviews(restaurant_names, data_folder=DATASET_FOLDER, 
                       max_reviews_per_restaurant=50):
-    """
-    Load reviews for multiple restaurants in batch
-    """
     print(f"\n🔄 Batch loading reviews for {len(restaurant_names)} restaurants...")
     
     all_results = {}
@@ -1073,11 +898,7 @@ def batch_load_reviews(restaurant_names, data_folder=DATASET_FOLDER,
     
     return all_results
 
-
 def compare_restaurants(restaurant_names, data_folder=DATASET_FOLDER):
-    """
-    Compare multiple restaurants based on their reviews
-    """
     print(f"\n📊 Comparing {len(restaurant_names)} restaurants...\n")
     
     comparison = {}
@@ -1093,27 +914,18 @@ def compare_restaurants(restaurant_names, data_folder=DATASET_FOLDER):
     
     return comparison
 
-
-# ============================================================================
-# MAIN EXECUTION EXAMPLE
-# ============================================================================
-
 if __name__ == "__main__":
-    # Example usage
     print("🍽️  Restaurant Review Scraper - Enhanced Edition\n")
     
-    # Test with a restaurant
     test_restaurant = "Leopold Cafe"
     
-    # Load reviews
     reviews = scrape_reviews_combined(
         restaurant_name=test_restaurant,
         max_reviews=30,
-        enable_web_scraping=False,  # Set to True to enable web scraping
+        enable_web_scraping=False,
         quality_threshold=50
     )
     
-    # Show statistics
     if reviews:
         print("\n📈 Review Statistics:")
         stats = get_review_statistics(reviews)
@@ -1125,7 +937,6 @@ if __name__ == "__main__":
         if 'ratings' in stats:
             print(f"  Average Rating: {stats['ratings']['average']:.2f}/5")
         
-        # Export to CSV
         export_reviews_to_csv(reviews, f"{test_restaurant.replace(' ', '_')}_reviews.csv")
     else:
         print("❌ No reviews found")

@@ -31,7 +31,7 @@
     }
   }
 
-  /* Header Section */
+  
   .recommendations-header {
     text-align: center;
     padding: 3rem 2rem;
@@ -85,7 +85,7 @@
     z-index: 1;
   }
 
-  /* Statistics Cards */
+  
   .stats-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -200,7 +200,7 @@
     font-weight: 600;
   }
 
-  /* Category Breakdown */
+  
   .category-breakdown {
     background: white;
     border-radius: 1.5rem;
@@ -299,7 +299,7 @@
     font-size: 1.1rem;
   }
 
-  /* Recommendation Cards */
+  
   .recommendations-section {
     margin: 3rem 0;
   }
@@ -344,7 +344,7 @@
     opacity: 0.05;
   }
 
-  /* Priority Colors */
+  
   .recommendation-card.priority-CRITICAL {
     border-left-color: #dc2626;
   }
@@ -443,7 +443,7 @@
     border: 2px solid rgba(102, 126, 234, 0.2);
   }
 
-  /* Action Section */
+  
   .action-section {
     text-align: center;
     margin-top: 4rem;
@@ -520,7 +520,7 @@
     text-decoration: underline;
   }
 
-  /* Empty State */
+  
   .empty-state {
     text-align: center;
     padding: 4rem 2rem;
@@ -540,7 +540,7 @@
     margin-bottom: 1rem;
   }
 
-  /* Responsive Design */
+  
   @media (max-width: 768px) {
     .page-container {
       padding: 1rem;
@@ -581,7 +581,7 @@
     }
   }
 
-  /* Print Styles */
+  
   @media print {
 
     .action-section,
@@ -596,7 +596,7 @@
 </style>
 
 <div class="page-container">
-  <!-- Header -->
+  
   <div class="recommendations-header">
     <h2>
       <i class="fas fa-lightbulb"></i>
@@ -605,7 +605,7 @@
     <p class="mb-0">Smart insights for {{ restaurant }}</p>
   </div>
 
-  <!-- Statistics Summary -->
+  
   <div class="stats-summary">
     <div class="stat-box positive">
       <div class="stat-icon">
@@ -632,7 +632,7 @@
     </div>
   </div>
 
-  <!-- Category Breakdown -->
+  
   {% if category_counts %}
   <div class="category-breakdown">
     <h4>
@@ -658,7 +658,7 @@
   </div>
   {% endif %}
 
-  <!-- Recommendations -->
+  
   <div class="recommendations-section">
     <h3 class="section-title">
       <i class="fas fa-tasks"></i>
@@ -694,7 +694,7 @@
     {% endif %}
   </div>
 
-  <!-- Action Section -->
+  
   <div class="action-section">
     <h4>
       <i class="fas fa-rocket"></i>
@@ -722,7 +722,7 @@
     </div>
   </div>
 
-  <!-- Export Options -->
+  
   <div class="export-section">
     <p class="text-muted mb-0">
       <i class="fas fa-download"></i>

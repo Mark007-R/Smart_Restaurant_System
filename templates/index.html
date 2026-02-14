@@ -2,7 +2,7 @@
 {% block content %}
 
 <style>
-  /* Hero Section */
+  
   .hero-section {
     text-align: center;
     padding: 4rem 2rem;
@@ -106,7 +106,7 @@
     letter-spacing: 1px;
   }
 
-  /* Search Container */
+  
   .search-container {
     background: white;
     padding: 2.5rem;
@@ -135,7 +135,7 @@
     font-size: 1.25rem;
   }
 
-  /* Upload Section */
+  
   .upload-section {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
     padding: 2rem;
@@ -163,7 +163,7 @@
     font-size: 1.25rem;
   }
 
-  /* Form Elements */
+  
   .form-label {
     font-weight: 700;
     color: #1e293b;
@@ -188,7 +188,7 @@
     border-color: #667eea;
   }
 
-  /* Restaurant Card */
+  
   .restaurant-card {
     position: relative;
     overflow: hidden;
@@ -266,7 +266,7 @@
     overflow: hidden;
   }
 
-  /* Rating Badge */
+  
   .rating-badge {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
@@ -284,7 +284,7 @@
     font-size: 1rem;
   }
 
-  /* Source Badge */
+  
   .source-badge {
     position: absolute;
     top: 1rem;
@@ -300,7 +300,7 @@
     z-index: 3;
   }
 
-  /* Feature Cards */
+  
   .feature-card {
     text-align: center;
     padding: 2rem;
@@ -371,7 +371,7 @@
     line-height: 1.6;
   }
 
-  /* Loading Spinner */
+  
   .loading-spinner {
     display: none;
     text-align: center;
@@ -397,7 +397,7 @@
     border-right-color: transparent;
   }
 
-  /* Restaurant Grid */
+  
   .restaurant-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -405,7 +405,7 @@
     margin-top: 2rem;
   }
 
-  /* Section Headers */
+  
   .section-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -433,7 +433,7 @@
     font-size: 1.1rem;
   }
 
-  /* Empty State */
+  
   .empty-state {
     text-align: center;
     padding: 5rem 2rem;
@@ -462,7 +462,7 @@
     font-size: 1rem;
   }
 
-  /* Info Cards */
+  
   .info-card {
     background: white;
     padding: 1.5rem;
@@ -483,7 +483,7 @@
     margin-right: 0.5rem;
   }
 
-  /* Quick Actions */
+  
   .quick-actions {
     display: flex;
     gap: 1rem;
@@ -515,7 +515,7 @@
     transform: translateY(-3px);
   }
 
-  /* Responsive Design */
+  
   @media (max-width: 768px) {
     .hero-section {
       padding: 2.5rem 1.5rem;
@@ -559,7 +559,7 @@
     }
   }
 
-  /* Animations */
+  
   @keyframes shimmer {
     0% {
       background-position: -1000px 0;
@@ -577,7 +577,6 @@
   }
 </style>
 
-<!-- Hero Section -->
 <div class="hero-section" data-aos="fade-down">
   <h1>
     <i class="fas fa-utensils"></i>
@@ -601,7 +600,6 @@
   </div>
 </div>
 
-<!-- Search & Upload Section -->
 <div class="search-container" data-aos="fade-up">
   <h4>
     <i class="fas fa-search-plus"></i>
@@ -610,7 +608,7 @@
 
   <form method="POST" action="{{ url_for('analyze') }}" enctype="multipart/form-data" id="analyzeForm">
     <div class="row g-3 align-items-end">
-      <!-- Restaurant Name Input -->
+      
       <div class="col-md-6">
         <label class="form-label">
           <i class="fas fa-store"></i> Restaurant Name
@@ -625,14 +623,14 @@
         </datalist>
       </div>
 
-      <!-- Analyze Button -->
+      
       <div class="col-md-3">
         <button type="submit" class="btn btn-success btn-lg w-100">
           <i class="fas fa-chart-line"></i> Analyze Now
         </button>
       </div>
 
-      <!-- Enable Scraping Checkbox -->
+      
       <div class="col-md-3">
         <div class="form-check form-switch" style="padding-top: 1rem;">
           <input class="form-check-input" type="checkbox" name="try_scrape" id="enableScraping">
@@ -643,7 +641,7 @@
       </div>
     </div>
 
-    <!-- Upload Section -->
+    
     <div class="upload-section">
       <label class="form-label">
         <i class="fas fa-cloud-upload-alt"></i> Or Upload Your Own Dataset
@@ -656,7 +654,7 @@
     </div>
   </form>
 
-  <!-- Loading Spinner -->
+  
   <div class="loading-spinner" id="loadingSpinner">
     <div class="spinner-border" role="status">
       <span class="visually-hidden">Loading...</span>
@@ -666,7 +664,6 @@
   </div>
 </div>
 
-<!-- Features Section -->
 <div class="row mb-5" data-aos="fade-up">
   <div class="col-md-4 mb-4">
     <div class="feature-card">
@@ -699,7 +696,6 @@
 
 <hr class="my-5">
 
-<!-- Available Restaurants Section -->
 <div class="section-header" data-aos="fade-up">
   <h3>
     <i class="fas fa-store"></i>
@@ -708,7 +704,6 @@
   <p>Browse {{ restaurants|length }} restaurants from our curated datasets</p>
 </div>
 
-<!-- Quick Actions -->
 <div class="quick-actions" data-aos="fade-up">
   <a href="/chat" class="quick-action-btn">
     <i class="fas fa-comments"></i> Open AI Chat
@@ -791,7 +786,6 @@
 </div>
 {% endif %}
 
-<!-- Info Modal -->
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">

@@ -31,7 +31,6 @@ if not os.path.exists(UPLOAD_FOLDER):
 if not os.path.exists(DATASET_FOLDER):
     os.makedirs(DATASET_FOLDER, exist_ok=True)
 
-# ---------------- DATABASE MODEL ----------------
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     restaurant = db.Column(db.String(200), index=True, nullable=False)
@@ -48,12 +47,10 @@ class Review(db.Model):
 with app.app_context():
     db.create_all()
 
-# ---------------- RAG Chat ----------------
 rag_instance = None
 current_indexed_restaurant = None
 
 def build_or_get_rag(reviews_texts, docs_texts=None):
-    """Build RAG instance with reviews and optional documents"""
     rag = RAGChat()
     combined = list(reviews_texts)
     if docs_texts:
@@ -62,62 +59,45 @@ def build_or_get_rag(reviews_texts, docs_texts=None):
         rag.index_documents(combined)
     return rag
 
-
-# ---------------- IMAGE UTILITY ----------------
 def get_restaurant_image(restaurant_name):
-    """Generate unique restaurant-related image for each restaurant"""
-    # Generate a unique number based on restaurant name
     hash_value = sum(ord(c) * (i + 1) for i, c in enumerate(restaurant_name))
     unique_id = hash_value % 10000
     
-    # Use Foodiesfeed API - free food photography specifically for restaurants
-    # Alternative: Use Lorem Flickr with food category
-    # Format: https://loremflickr.com/800/600/food,restaurant/all?random={unique_id}
     
     return f"https://loremflickr.com/800/600/food,restaurant/all?random={unique_id}"
 
-
-# ---------------- CSV PROCESSING UTILITIES ----------------
 def allowed_file(filename):
-    """Check if file extension is allowed"""
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXT
 
-
 def extract_reviews_from_zomato_reviews_list(reviews_list_str):
-    """Extract review texts from Zomato's reviews_list column which contains tuples"""
     reviews = []
     if pd.isna(reviews_list_str) or not reviews_list_str:
         return reviews
     
     try:
-        # Try to parse as Python literal
         parsed = ast.literal_eval(reviews_list_str)
         if isinstance(parsed, list):
             for item in parsed:
                 if isinstance(item, tuple) and len(item) >= 2:
-                    review_text = item[0]  # First element is usually the review text
+                    review_text = item[0]
                     if review_text and isinstance(review_text, str):
                         reviews.append(review_text.strip())
         return reviews
     except:
-        # Fallback: try simple string extraction
         try:
-            # Remove brackets and split by common separators
             cleaned = str(reviews_list_str).replace('[', '').replace(']', '')
             parts = cleaned.split('(')
             for part in parts:
                 if ')' in part:
                     text = part.split(')')[0].strip()
-                    if text and len(text) > 10:  # Minimum length check
+                    if text and len(text) > 10:
                         reviews.append(text.strip('"').strip("'"))
         except:
             pass
     
     return reviews
 
-
 def process_mumbaires_csv(filepath, restaurant_filter=None):
-    """Process mumbaires.csv format"""
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
         df.columns = df.columns.str.strip()
@@ -132,7 +112,6 @@ def process_mumbaires_csv(filepath, restaurant_filter=None):
             if pd.isna(restaurant_name) or restaurant_name.lower() == 'nan':
                 continue
                 
-            # Filter by restaurant if specified
             if restaurant_filter:
                 if restaurant_filter.lower() not in restaurant_name.lower():
                     continue
@@ -145,7 +124,6 @@ def process_mumbaires_csv(filepath, restaurant_filter=None):
                     'source': 'mumbaires'
                 })
             
-            # Collect restaurant data for home page
             if not restaurant_filter:
                 restaurants_data.append({
                     'name': restaurant_name,
@@ -159,9 +137,7 @@ def process_mumbaires_csv(filepath, restaurant_filter=None):
         print(f"Error processing mumbaires.csv: {e}")
         return [], []
 
-
 def process_resreviews_csv(filepath, restaurant_filter=None):
-    """Process Resreviews.csv format"""
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
         df.columns = df.columns.str.strip()
@@ -200,9 +176,7 @@ def process_resreviews_csv(filepath, restaurant_filter=None):
         print(f"Error processing Resreviews.csv: {e}")
         return [], []
 
-
 def process_reviews_csv(filepath, restaurant_filter=None):
-    """Process reviews.csv format"""
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
         df.columns = df.columns.str.strip()
@@ -241,9 +215,7 @@ def process_reviews_csv(filepath, restaurant_filter=None):
         print(f"Error processing reviews.csv: {e}")
         return [], []
 
-
 def process_zomato_csv(filepath, restaurant_filter=None):
-    """Process zomato.csv format"""
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
         df.columns = df.columns.str.strip()
@@ -262,7 +234,6 @@ def process_zomato_csv(filepath, restaurant_filter=None):
                 if restaurant_filter.lower() not in restaurant_name.lower():
                     continue
             
-            # Extract reviews from reviews_list column
             extracted_reviews = extract_reviews_from_zomato_reviews_list(reviews_list)
             
             for review_text in extracted_reviews:
@@ -289,9 +260,7 @@ def process_zomato_csv(filepath, restaurant_filter=None):
         print(f"Error processing zomato.csv: {e}")
         return [], []
 
-
 def process_zomato2_csv(filepath, restaurant_filter=None):
-    """Process zomato2.csv format"""
     try:
         df = pd.read_csv(filepath, encoding="utf-8", on_bad_lines="skip")
         df.columns = df.columns.str.strip()
@@ -299,7 +268,6 @@ def process_zomato2_csv(filepath, restaurant_filter=None):
         reviews = []
         restaurants_data = []
         
-        # Group by restaurant to aggregate data
         restaurant_groups = df.groupby('Restaurant_Name')
         
         for restaurant_name, group in restaurant_groups:
@@ -310,11 +278,9 @@ def process_zomato2_csv(filepath, restaurant_filter=None):
                 if restaurant_filter.lower() not in str(restaurant_name).lower():
                     continue
             
-            # Create synthetic reviews from item data (since this dataset doesn't have review text)
             for _, row in group.iterrows():
                 item_name = str(row.get('Item_Name', '')).strip()
                 if item_name and item_name.lower() != 'nan':
-                    # Create a basic review from item information
                     review_text = f"Tried {item_name}"
                     if row.get('Best_Seller', False):
                         review_text += " - Best Seller"
@@ -341,9 +307,7 @@ def process_zomato2_csv(filepath, restaurant_filter=None):
         print(f"Error processing zomato2.csv: {e}")
         return [], []
 
-
 def process_all_datasets(restaurant_filter=None):
-    """Process all dataset files and combine results"""
     all_reviews = []
     all_restaurants = []
     
@@ -369,19 +333,14 @@ def process_all_datasets(restaurant_filter=None):
     
     return all_reviews, all_restaurants
 
-
-# ---------------- HOME PAGE ----------------
 @app.route("/", methods=["GET"])
 def index():
-    """Home page: Display all restaurants from datasets"""
     _, restaurants_data = process_all_datasets(restaurant_filter=None)
     
-    # Deduplicate restaurants by name
     unique_restaurants = {}
     for r in restaurants_data:
         name = r['name']
         if name not in unique_restaurants:
-            # Add unique photo based on restaurant name
             r['photo'] = get_restaurant_image(name)
             unique_restaurants[name] = r
     
@@ -392,16 +351,11 @@ def index():
     
     return render_template("index.html", restaurants=restaurants[:50])
 
-
-# ---------------- ANALYZE ----------------
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
-    """Handle both GET and POST requests for analyze"""
     if request.method == "GET":
-        # Handle GET request with query parameter
         restaurant = request.args.get("restaurant", "").strip()
     else:
-        # Handle POST request with form data
         restaurant = request.form.get("restaurant_name", "").strip()
     
     if not restaurant:
@@ -412,7 +366,6 @@ def analyze():
     from_uploaded_docs = []
     source = "database"
 
-    # Priority 1: Uploaded file (only for POST requests)
     if request.method == "POST" and "datafile" in request.files:
         f = request.files["datafile"]
         if f and f.filename and allowed_file(f.filename):
@@ -421,7 +374,6 @@ def analyze():
             f.save(save_path)
             
             if filename.lower().endswith(".csv"):
-                # Try to process with all processors
                 for processor in [process_mumbaires_csv, process_resreviews_csv, 
                                 process_reviews_csv, process_zomato_csv, process_zomato2_csv]:
                     try:
@@ -445,14 +397,12 @@ def analyze():
                     from_uploaded_docs.append(save_path)
                     flash(f"✓ Loaded {len(reviews_data)} reviews from text file", "success")
 
-    # Priority 2: Process all datasets
     if not reviews_data:
         reviews_data, _ = process_all_datasets(restaurant_filter=restaurant)
         if reviews_data:
             source = "local_dataset"
             flash(f"✓ Found {len(reviews_data)} reviews for '{restaurant}' across all datasets", "success")
 
-    # Priority 3: Database fallback
     if not reviews_data:
         db_reviews = Review.query.filter(Review.restaurant.ilike(f"%{restaurant}%")).all()
         if db_reviews:
@@ -461,7 +411,6 @@ def analyze():
             source = "database"
             flash(f"✓ Found {len(reviews_data)} reviews in database", "info")
 
-    # Priority 4: Scraping fallback (only if explicitly enabled in POST)
     if not reviews_data and request.method == "POST":
         try_scrape = request.form.get("try_scrape") == "on"
         if try_scrape:
@@ -479,7 +428,6 @@ def analyze():
         flash(f"❌ No reviews found for '{restaurant}'. Try uploading a CSV or enabling scraping.", "error")
         return redirect(url_for("index"))
 
-    # Store in database
     stored_count = 0
     reviews_texts = []
     
@@ -487,7 +435,6 @@ def analyze():
         review_text = review['text']
         reviews_texts.append(review_text)
         
-        # Check if already exists
         exists = Review.query.filter(
             Review.restaurant.ilike(f"%{restaurant}%"), 
             Review.text == review_text
@@ -517,7 +464,6 @@ def analyze():
         db.session.commit()
         flash(f"✓ Added {stored_count} new reviews to database", "success")
 
-    # Build RAG
     docs_texts = []
     for p in from_uploaded_docs:
         try:
@@ -533,8 +479,6 @@ def analyze():
     flash(f"✓ Analysis complete! Processed {len(reviews_texts)} reviews.", "success")
     return redirect(url_for("results", restaurant_name=restaurant))
 
-
-# ---------------- RESULTS PAGE ----------------
 @app.route("/results")
 def results():
     restaurant = request.args.get("restaurant_name", "")
@@ -552,22 +496,18 @@ def results():
     
     viz_images = generate_visualizations(reviews)
     
-    # Calculate statistics
     category_counts = {}
     sentiment_counts = {"Positive": 0, "Negative": 0, "Neutral": 0}
     source_counts = {}
     
     for r in reviews:
-        # Categories
         cats = [c.strip() for c in (r.categories or "").split(",") if c.strip()]
         for c in cats:
             category_counts[c] = category_counts.get(c, 0) + 1
         
-        # Sentiments
         if r.sentiment:
             sentiment_counts[r.sentiment] = sentiment_counts.get(r.sentiment, 0) + 1
         
-        # Sources
         source = r.source_file or "unknown"
         source_counts[source] = source_counts.get(source, 0) + 1
     
@@ -584,8 +524,6 @@ def results():
                          source_counts=source_counts,
                          visualizations=viz_images)
 
-
-# ---------------- RECOMMENDATIONS ----------------
 @app.route("/recommendations")
 def recommendations():
     restaurant = request.args.get("restaurant_name", "")
@@ -606,8 +544,6 @@ def recommendations():
                          category_counts=counts,
                          sentiment_counts=sentiments)
 
-
-# ---------------- CHAT ----------------
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     global rag_instance, current_indexed_restaurant
@@ -626,21 +562,16 @@ def chat():
     answer, sources = rag_instance.answer_query(q, top_k=3)
     return jsonify({"answer": answer, "sources": sources})
 
-
-# ---------------- UTILITY ROUTES ----------------
 @app.route("/search_restaurants")
 def search_restaurants():
-    """API endpoint to search restaurants"""
     query = request.args.get("q", "").strip().lower()
     if not query:
         return jsonify([])
     
     _, restaurants_data = process_all_datasets(restaurant_filter=None)
     
-    # Filter restaurants matching query
     matches = [r for r in restaurants_data if query in r['name'].lower()]
     
-    # Deduplicate
     unique = {}
     for r in matches:
         if r['name'] not in unique:
@@ -648,7 +579,5 @@ def search_restaurants():
     
     return jsonify(list(unique.values())[:10])
 
-
-# ---------------- RUN APP ----------------
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
