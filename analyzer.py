@@ -2,6 +2,7 @@ import re
 import io
 import base64
 import ast
+import numpy as np
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from collections import Counter
 from nltk.corpus import stopwords
@@ -271,99 +272,135 @@ def generate_visualizations(reviews):
         plt.tight_layout()
         images['problem_areas'] = plot_to_base64(fig)
     
-    # 2. Complaint Category Analysis
-    if counts:
-        df_counts = pd.DataFrame(list(counts.items()), columns=["Category", "Count"])
-        df_counts = df_counts.sort_values("Count", ascending=False)
+    # 2. OVERALL SENTIMENT GAUGE - Health indicator
+    if any(sentiments.values()):
+        total = sum(sentiments.values())
+        pos_pct = (sentiments.get("Positive", 0) / total * 100) if total > 0 else 0
+        neg_pct = (sentiments.get("Negative", 0) / total * 100) if total > 0 else 0
         
-        fig, ax = plt.subplots(figsize=(14, 7))
-        y_positions = range(len(df_counts))
-        colors = plt.cm.viridis(range(len(df_counts)))
+        fig, ax = plt.subplots(figsize=(12, 6))
         
-        ax.hlines(y=y_positions, xmin=0, xmax=df_counts["Count"],
-                  color=colors, linewidth=6, alpha=0.9)
-        ax.scatter(df_counts["Count"], y_positions, s=140,
-                   color=colors, edgecolor='black', linewidth=1.3, zorder=3)
+        categories = ['Positive', 'Negative', 'Neutral']
+        values = [sentiments.get(c, 0) for c in categories]
+        colors_sent = ['#22c55e', '#ef4444', '#64748b']
         
-        ax.set_yticks(list(y_positions))
-        ax.set_yticklabels(df_counts["Category"], fontsize=12)
-        ax.invert_yaxis()
+        bars = ax.bar(categories, values, color=colors_sent, edgecolor='#14b8a6', 
+                     linewidth=2.5, alpha=0.8, width=0.6)
         
-        ax.set_title("📊 Complaint Frequency by Category", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Number of Mentions", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Category", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.4, linestyle='--')
+        ax.set_title("💯 Overall Sentiment Health Score", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_facecolor('#0f172a')
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
         
-        for y_pos, count in zip(y_positions, df_counts["Count"]):
-            ax.text(count + 0.2, y_pos, f'{int(count)}',
-                    va='center', fontsize=11, fontweight='bold')
+        for bar, val in zip(bars, values):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height + max(values)*0.01,
+                   f'{int(val)}\n({val/total*100:.1f}%)',
+                   ha='center', va='bottom', fontsize=12, fontweight='bold', 
+                   color='#e2e8f0')
         
         plt.tight_layout()
-        images['category_bar'] = plot_to_base64(fig)
+        images['sentiment_gauge'] = plot_to_base64(fig)
     
-    # 3. Sentiment Score Distribution
+    # 3. ISSUE-SPECIFIC BREAKDOWN - Which complaints matter most
+    if category_sentiment_map:
+        fig, ax = plt.subplots(figsize=(14, 8))
+        
+        category_names = list(category_sentiment_map.keys())
+        pos_counts = [category_sentiment_map[cat].get("Positive", 0) for cat in category_names]
+        neg_counts = [category_sentiment_map[cat].get("Negative", 0) for cat in category_names]
+        neu_counts = [category_sentiment_map[cat].get("Neutral", 0) for cat in category_names]
+        
+        x = range(len(category_names))
+        width = 0.6
+        
+        ax.bar(x, pos_counts, width, label='Positive', color='#22c55e', edgecolor='#14b8a6', linewidth=1.5, alpha=0.8)
+        ax.bar(x, neg_counts, width, bottom=pos_counts, label='Negative', color='#ef4444', edgecolor='#14b8a6', linewidth=1.5, alpha=0.8)
+        ax.bar(x, neu_counts, width, bottom=[p+n for p,n in zip(pos_counts, neg_counts)], 
+               label='Neutral', color='#64748b', edgecolor='#14b8a6', linewidth=1.5, alpha=0.8)
+        
+        ax.set_title("📊 Issue Breakdown: Sentiment per Category", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_ylabel("Number of Mentions", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_xlabel("Issue Type", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_xticks(x)
+        ax.set_xticklabels(category_names, rotation=45, ha='right', fontsize=11)
+        ax.legend(fontsize=12, loc='upper right', framealpha=0.95)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
+        
+        plt.tight_layout()
+        images['issue_breakdown'] = plot_to_base64(fig)
+    
+    # 4. SENTIMENT TREND - How performance changes
     if sentiment_scores:
-        fig, ax = plt.subplots(figsize=(13, 7))
+        fig, ax = plt.subplots(figsize=(13, 6))
         
-        n, bins, patches = ax.hist(sentiment_scores, bins=40, 
-                                   color='steelblue', edgecolor='black', 
-                                   alpha=0.75, linewidth=1.2)
+        # Sort scores and create moving average
+        sorted_scores = sorted(sentiment_scores)
+        window = max(3, len(sorted_scores) // 10)
+        moving_avg = pd.Series(sorted_scores).rolling(window=window, center=True).mean()
         
-        # Color bars by sentiment
-        for i, patch in enumerate(patches):
-            if bins[i] >= 0.05:
-                patch.set_facecolor('#2ecc71')
-            elif bins[i] <= -0.05:
-                patch.set_facecolor('#e74c3c')
-            else:
-                patch.set_facecolor('#95a5a6')
+        ax.scatter(range(len(sorted_scores)), sorted_scores, alpha=0.4, s=60, 
+                  color='#14b8a6', edgecolor='#0ea5e9', linewidth=0.8, label='Individual Reviews')
+        ax.plot(range(len(sorted_scores)), moving_avg, color='#f59e0b', linewidth=3, 
+               label=f'Trend (MA-{window})', alpha=0.9)
+        ax.axhline(y=0, color='#64748b', linestyle='--', linewidth=2, alpha=0.6, label='Neutral Threshold')
         
-        ax.axvline(x=0.05, color='green', linestyle='--', linewidth=2.5, 
-                  label='Positive threshold', alpha=0.8)
-        ax.axvline(x=-0.05, color='red', linestyle='--', linewidth=2.5, 
-                  label='Negative threshold', alpha=0.8)
-        ax.axvline(x=0, color='gray', linestyle='-', linewidth=2, 
-                  label='Neutral', alpha=0.6)
+        ax.fill_between(range(len(sorted_scores)), 0, sorted_scores, 
+                       where=(sorted_scores >= 0), alpha=0.2, color='#22c55e', label='Positive Zone')
+        ax.fill_between(range(len(sorted_scores)), 0, sorted_scores, 
+                       where=(sorted_scores < 0), alpha=0.2, color='#ef4444', label='Negative Zone')
         
-        ax.set_title("📈 Distribution of Sentiment Scores", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Sentiment Score", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Frequency", fontsize=14, fontweight='bold')
-        ax.legend(fontsize=12, loc='upper right')
-        ax.grid(axis='y', alpha=0.4, linestyle='--')
+        ax.set_title("📈 Sentiment Trend Analysis", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Review Index (Chronological)", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_ylabel("Sentiment Score", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.legend(fontsize=11, loc='best', framealpha=0.95)
+        ax.grid(alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
         
         plt.tight_layout()
-        images['score_hist'] = plot_to_base64(fig)
+        images['sentiment_trend'] = plot_to_base64(fig)
     
-    # 4. Category vs Sentiment Heatmap
-    if counts and any(sentiments.values()):
-        category_sentiment = {}
-        for r in reviews:
-            cats = [c.strip() for c in (r.categories or "").split(",") if c.strip()]
-            sent = r.sentiment if hasattr(r, "sentiment") and r.sentiment else "Neutral"
-            for cat in cats:
-                if cat not in category_sentiment:
-                    category_sentiment[cat] = {"Positive": 0, "Negative": 0, "Neutral": 0}
-                category_sentiment[cat][sent] += 1
+    # 5. RATING DISTRIBUTION - Customer satisfaction levels
+    if rating_distribution:
+        fig, ax = plt.subplots(figsize=(12, 6))
         
-        if category_sentiment:
-            df_heatmap = pd.DataFrame(category_sentiment).T.fillna(0)
-            
-            fig, ax = plt.subplots(figsize=(13, 8))
-            sns.heatmap(df_heatmap, annot=True, fmt='g', cmap='RdYlGn_r', 
-                       linewidths=2, ax=ax, cbar_kws={'label': 'Count'},
-                       annot_kws={'fontsize': 12, 'weight': 'bold'})
-            
-            ax.set_title("🔥 Complaint Categories vs Sentiment Heatmap", 
-                        fontsize=20, fontweight='bold', pad=25)
-            ax.set_xlabel("Category", fontsize=14, fontweight='bold')
-            ax.set_ylabel("Sentiment", fontsize=14, fontweight='bold')
-            plt.xticks(rotation=45, ha='right', fontsize=11)
-            plt.yticks(rotation=0, fontsize=11)
-            
-            plt.tight_layout()
-            images['category_sentiment_heatmap'] = plot_to_base64(fig)
+        # Create histogram with rating buckets
+        bins = [0, 1, 2, 3, 4, 5, 6]
+        n, bins_edges, patches = ax.hist(rating_distribution, bins=bins, 
+                                         color='#14b8a6', edgecolor='#0ea5e9', 
+                                         linewidth=2, alpha=0.8)
+        
+        # Color bars by satisfaction level
+        colors_rating = ['#ef4444', '#f97316', '#fbbf24', '#a3e635', '#22c55e']
+        for patch, color in zip(patches, colors_rating):
+            patch.set_facecolor(color)
+        
+        mean_rating = sum(rating_distribution) / len(rating_distribution)
+        ax.axvline(x=mean_rating, color='#f59e0b', linestyle='--', linewidth=3, 
+                  label=f'Average: {mean_rating:.2f}', alpha=0.9)
+        
+        ax.set_title("⭐ Customer Rating Distribution", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Rating (1-5 scale)", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_ylabel("Number of Customers", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.legend(fontsize=12, loc='upper right', framealpha=0.95)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
+        
+        # Add count labels
+        for height, left in zip(n, bins_edges[:-1]):
+            if height > 0:
+                ax.text(left + 0.5, height + max(n)*0.01, f'{int(height)}', 
+                       ha='center', va='bottom', fontsize=10, fontweight='bold', color='#e2e8f0')
+        
+        plt.tight_layout()
+        images['ratings'] = plot_to_base64(fig)
     
-    # 5. Top Keywords
+    # 6. TOP KEYWORDS - What customers talk about
     all_keywords = []
     for r in reviews:
         if hasattr(r, 'keywords') and r.keywords:
@@ -371,125 +408,74 @@ def generate_visualizations(reviews):
     
     if all_keywords:
         keyword_counts = Counter(all_keywords)
-        top_keywords = dict(keyword_counts.most_common(15))
+        top_keywords = dict(keyword_counts.most_common(12))
         
-        fig, ax = plt.subplots(figsize=(13, 9))
-        keywords = list(top_keywords.keys())
+        fig, ax = plt.subplots(figsize=(13, 8))
+        keywords_list = list(top_keywords.keys())
         counts_list = list(top_keywords.values())
-        y_positions = range(len(keywords))
         
-        sizes = [max(120, v * 70) for v in counts_list]
-        colors_gradient = plt.cm.plasma(range(len(keywords)))
-        ax.scatter(counts_list, y_positions, s=sizes, c=colors_gradient,
-                   alpha=0.8, edgecolor='black', linewidth=1.2)
+        colors_gradient = plt.cm.RdYlGn_r(np.linspace(0.3, 0.9, len(keywords_list)))
+        bars = ax.barh(keywords_list, counts_list, color=colors_gradient, 
+                      edgecolor='#14b8a6', linewidth=2, alpha=0.85)
         
-        ax.set_yticks(list(y_positions))
-        ax.set_yticklabels(keywords, fontsize=12)
+        ax.set_title("🎯 Top Customer Concerns & Keywords", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
         ax.invert_yaxis()
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
         
-        ax.set_title("🔑 Top 15 Keywords in Reviews", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Frequency", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Keywords", fontsize=14, fontweight='bold')
-        ax.grid(axis='x', alpha=0.4, linestyle='--')
-        
-        for y_pos, count in zip(y_positions, counts_list):
-            ax.text(count + 0.4, y_pos, str(count), va='center',
-                    fontsize=11, fontweight='bold')
+        for i, (bar, count) in enumerate(zip(bars, counts_list)):
+            ax.text(count + 0.2, i, str(count), va='center', fontsize=11, 
+                   fontweight='bold', color='#22c55e')
         
         plt.tight_layout()
-        images['keywords_bar'] = plot_to_base64(fig)
+        images['keywords'] = plot_to_base64(fig)
     
-    # 6. Data Source Distribution
-    if source_distribution:
-        fig, ax = plt.subplots(figsize=(12, 7))
-        sources = list(source_distribution.keys())
-        counts_list = list(source_distribution.values())
+    # 7. POSITIVE vs NEGATIVE COMPARISON - Side-by-side analysis
+    if counts:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
         
-        colors_list = plt.cm.Set3(range(len(sources)))
-        wedges, texts, autotexts = ax.pie(
-            counts_list,
-            labels=sources,
-            autopct='%1.1f%%',
-            startangle=90,
-            colors=colors_list,
-            wedgeprops={'width': 0.4, 'edgecolor': 'white'}
-        )
+        # Negative issues
+        neg_issues = sorted([(cat, category_sentiment_map[cat].get("Negative", 0)) 
+                            for cat in category_sentiment_map.keys()],
+                           key=lambda x: x[1], reverse=True)[:8]
+        neg_cats, neg_vals = zip(*neg_issues) if neg_issues else ([], [])
         
-        for autotext in autotexts:
-            autotext.set_color('black')
-            autotext.set_fontsize(11)
-            autotext.set_fontweight('bold')
+        bars1 = ax1.barh(neg_cats, neg_vals, color='#ef4444', edgecolor='#dc2626', 
+                        linewidth=2, alpha=0.8)
+        ax1.set_title("🔴 Top Negative Issues", fontsize=16, fontweight='bold', 
+                     color='#e2e8f0')
+        ax1.set_xlabel("Count", fontsize=12, fontweight='bold', color='#e2e8f0')
+        ax1.invert_yaxis()
+        ax1.grid(axis='x', alpha=0.3, linestyle='--')
+        ax1.set_facecolor('#0f172a')
         
-        ax.set_title("📂 Reviews by Data Source", fontsize=20, fontweight='bold', pad=25)
-        ax.axis('equal')
+        for bar, val in zip(bars1, neg_vals):
+            ax1.text(val + 0.2, bar.get_y() + bar.get_height()/2, str(int(val)), 
+                    va='center', fontsize=10, fontweight='bold', color='#fca5a5')
         
-        plt.tight_layout()
-        images['source_distribution'] = plot_to_base64(fig)
-    
-    # 7. Rating Distribution
-    if rating_distribution:
-        fig, ax = plt.subplots(figsize=(12, 7))
+        # Positive issues
+        pos_issues = sorted([(cat, category_sentiment_map[cat].get("Positive", 0)) 
+                            for cat in category_sentiment_map.keys()],
+                           key=lambda x: x[1], reverse=True)[:8]
+        pos_cats, pos_vals = zip(*pos_issues) if pos_issues else ([], [])
         
-        df_ratings = pd.DataFrame({'rating': rating_distribution})
-        sns.violinplot(y='rating', data=df_ratings, ax=ax, color='mediumseagreen',
-                       inner=None, linewidth=1.2, alpha=0.8)
-        sns.boxplot(y='rating', data=df_ratings, ax=ax, width=0.2,
-                    color='white', fliersize=3, linewidth=1.3)
+        bars2 = ax2.barh(pos_cats, pos_vals, color='#22c55e', edgecolor='#16a34a', 
+                        linewidth=2, alpha=0.8)
+        ax2.set_title("🟢 Top Praised Attributes", fontsize=16, fontweight='bold', 
+                     color='#e2e8f0')
+        ax2.set_xlabel("Count", fontsize=12, fontweight='bold', color='#e2e8f0')
+        ax2.invert_yaxis()
+        ax2.grid(axis='x', alpha=0.3, linestyle='--')
+        ax2.set_facecolor('#0f172a')
         
-        mean_rating = sum(rating_distribution) / len(rating_distribution)
-        ax.axhline(y=mean_rating, color='red', linestyle='--', linewidth=2.5,
-                   label=f'Mean: {mean_rating:.2f}', alpha=0.8)
-        
-        ax.set_title("⭐ Rating Distribution", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("")
-        ax.set_ylabel("Rating", fontsize=14, fontweight='bold')
-        ax.legend(fontsize=13, loc='upper right')
-        ax.grid(axis='y', alpha=0.4, linestyle='--')
+        for bar, val in zip(bars2, pos_vals):
+            ax2.text(val + 0.2, bar.get_y() + bar.get_height()/2, str(int(val)), 
+                    va='center', fontsize=10, fontweight='bold', color='#bbf7d0')
         
         plt.tight_layout()
-        images['rating_dist'] = plot_to_base64(fig)
-    
-    # 8. Sentiment Trend Over Time
-    reviews_with_time = [r for r in reviews if hasattr(r, 'created_at') and r.created_at]
-    if len(reviews_with_time) > 10:
-        df_timeline = pd.DataFrame([
-            {
-                'date': r.created_at,
-                'sentiment': r.sentiment if hasattr(r, 'sentiment') else 'Neutral',
-                'score': r.score if hasattr(r, 'score') else 0
-            }
-            for r in reviews_with_time
-        ])
-        
-        df_timeline['date'] = pd.to_datetime(df_timeline['date'])
-        df_timeline = df_timeline.sort_values('date')
-        df_timeline['week'] = df_timeline['date'].dt.to_period('W')
-        
-        weekly_sentiment = df_timeline.groupby(['week', 'sentiment']).size().unstack(fill_value=0)
-        weekly_sentiment = weekly_sentiment.reindex(columns=["Positive", "Neutral", "Negative"], fill_value=0)
-        
-        fig, ax = plt.subplots(figsize=(14, 7))
-        x_vals = range(len(weekly_sentiment.index))
-        ax.stackplot(
-            x_vals,
-            weekly_sentiment["Positive"],
-            weekly_sentiment["Neutral"],
-            weekly_sentiment["Negative"],
-            labels=["Positive", "Neutral", "Negative"],
-            colors=['#2ecc71', '#95a5a6', '#e74c3c'],
-            alpha=0.8
-        )
-        
-        ax.set_title("📅 Sentiment Trend Over Time", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Week", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold')
-        ax.legend(title='Sentiment', fontsize=12, title_fontsize=13, loc='upper left')
-        ax.grid(True, alpha=0.4, linestyle='--')
-        ax.set_xticks(list(x_vals))
-        ax.set_xticklabels(weekly_sentiment.index.astype(str), rotation=45, ha='right', fontsize=11)
-        
-        plt.tight_layout()
-        images['sentiment_trend'] = plot_to_base64(fig)
+        images['positive_vs_negative'] = plot_to_base64(fig)
     
     return images
 
