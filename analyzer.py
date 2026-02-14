@@ -306,34 +306,35 @@ def generate_visualizations(reviews):
         except Exception as e:
             print(f"Error reading {csv_file}: {e}")
     
-    fig, ax = plt.subplots(figsize=(14, 7))
     categories = [c.replace('_', ' ').title() for c in ratings_by_category.keys()]
-    avg_scores = [np.mean(ratings_by_category[c]) if ratings_by_category[c] else 0 
+    avg_scores = [np.mean(ratings_by_category[c]) if ratings_by_category[c] else 0
                   for c in ratings_by_category.keys()]
-    colors_cat = ['#22c55e' if s >= 4 else '#f59e0b' if s >= 3 else '#ef4444' for s in avg_scores]
-    
-    bars = ax.bar(categories, avg_scores, color=colors_cat, edgecolor='#14b8a6', 
-                  linewidth=2, alpha=0.85, width=0.7)
-    
-    ax.set_title("⭐ Ratings by Category", fontsize=20, fontweight='bold', 
-                pad=25, color='#e2e8f0')
-    ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
-    ax.set_ylim(0, 5.5)
-    ax.axhline(y=4, color='#22c55e', linestyle='--', linewidth=1.5, alpha=0.5, label='Good (4.0)')
-    ax.axhline(y=3, color='#f59e0b', linestyle='--', linewidth=1.5, alpha=0.5, label='Average (3.0)')
-    ax.grid(axis='y', alpha=0.3, linestyle='--')
-    ax.set_facecolor('#0f172a')
-    ax.legend(fontsize=10)
-    plt.xticks(rotation=45, ha='right')
-    
-    for bar, score in zip(bars, avg_scores):
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height + 0.15,
-               f'{score:.2f}', ha='center', va='bottom', fontsize=12, 
-               fontweight='bold', color='#e2e8f0')
-    
-    plt.tight_layout()
-    images['ratings_by_category'] = plot_to_base64(fig)
+    if categories:
+        sorted_pairs = sorted(zip(categories, avg_scores), key=lambda x: x[1])
+        categories_sorted, scores_sorted = zip(*sorted_pairs)
+        y_pos = np.arange(len(categories_sorted))
+        colors_cat = plt.cm.RdYlGn(np.array(scores_sorted) / 5.0)
+
+        fig, ax = plt.subplots(figsize=(14, 7))
+        ax.hlines(y_pos, 0, scores_sorted, color='#334155', linewidth=4, alpha=0.7)
+        ax.scatter(scores_sorted, y_pos, s=180, c=colors_cat, edgecolor='#e2e8f0',
+                   linewidth=1.2, zorder=3)
+
+        ax.set_title("⭐ Ratings by Category", fontsize=20, fontweight='bold',
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(categories_sorted, color='#e2e8f0')
+        ax.set_xlim(0, 5.5)
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
+
+        for y, score in zip(y_pos, scores_sorted):
+            ax.text(score + 0.08, y, f'{score:.2f}', va='center', fontsize=11,
+                    fontweight='bold', color='#e2e8f0')
+
+        plt.tight_layout()
+        images['ratings_by_category'] = plot_to_base64(fig)
     
     # Aggregate menu items from ALL CSV files
     all_menu_items = []
@@ -499,19 +500,23 @@ def generate_visualizations(reviews):
             colors_severity = ['#ef4444' if p > 50 else '#f97316' if p > 30 else '#fbbf24' 
                               for p in neg_percentages]
             
-            bars = ax.barh(categories, neg_percentages, color=colors_severity, 
-                           edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+            y_pos = np.arange(len(categories))
+            ax.hlines(y_pos, 0, neg_percentages, color='#334155', linewidth=4, alpha=0.7)
+            ax.scatter(neg_percentages, y_pos, s=220, c=colors_severity,
+                       edgecolor='#e2e8f0', linewidth=1.2, zorder=3)
             
             ax.set_title("🚨 Problem Areas by Negative Sentiment", 
                         fontsize=20, fontweight='bold', pad=25, color='#e2e8f0')
             ax.set_xlabel("% Negative Mentions", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.set_yticks(y_pos)
+            ax.set_yticklabels(categories, color='#e2e8f0')
             ax.invert_yaxis()
             ax.grid(axis='x', alpha=0.3, linestyle='--')
             ax.set_facecolor('#0f172a')
             
-            for i, (bar, p) in enumerate(zip(bars, neg_percentages)):
-                ax.text(p + 1.5, i, f'{p:.1f}%', va='center', 
-                       fontsize=11, fontweight='bold', color='#22c55e')
+            for y, p in zip(y_pos, neg_percentages):
+                ax.text(p + 1.2, y, f'{p:.1f}%', va='center', 
+                       fontsize=11, fontweight='bold', color='#e2e8f0')
             
             plt.tight_layout()
             images['problem_areas'] = plot_to_base64(fig)
@@ -553,33 +558,39 @@ def generate_visualizations(reviews):
         keyword_counts = Counter(all_keywords)
         top_keywords = dict(keyword_counts.most_common(12))
         
-        fig, ax = plt.subplots(figsize=(13, 8))
         keywords_list = list(top_keywords.keys())
         counts_list = list(top_keywords.values())
-        
-        # Use dark theme gradient from red to yellow
-        colors_gradient = ['#ef4444', '#f87171', '#fb923c', '#fb7185', '#f59e0b', '#fbbf24', '#fde047', '#facc15', '#fcd34d', '#fde68a', '#fef08a', '#fef3c7'][:len(keywords_list)]
-        bars = ax.barh(keywords_list, counts_list, color=colors_gradient, 
-                      edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+        sorted_pairs = sorted(zip(keywords_list, counts_list), key=lambda x: x[1])
+        keywords_sorted, counts_sorted = zip(*sorted_pairs)
+        y_pos = np.arange(len(keywords_sorted))
+        sizes = np.array(counts_sorted) * 80
+        colors = plt.cm.YlOrRd(np.array(counts_sorted) / max(counts_sorted))
+
+        fig, ax = plt.subplots(figsize=(13, 8))
+        ax.hlines(y_pos, 0, counts_sorted, color='#334155', linewidth=3, alpha=0.7)
+        ax.scatter(counts_sorted, y_pos, s=sizes, c=colors, alpha=0.85,
+                   edgecolor='#e2e8f0', linewidth=1.2, zorder=3)
         
         ax.set_title("🎯 Top Customer Concerns & Keywords", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
         ax.set_xlabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.invert_yaxis()
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(keywords_sorted, color='#e2e8f0')
         ax.grid(axis='x', alpha=0.3, linestyle='--')
         ax.set_facecolor('#0f172a')
-        
-        for i, (bar, count) in enumerate(zip(bars, counts_list)):
-            ax.text(count + 0.2, i, str(count), va='center', fontsize=11, 
-                   fontweight='bold', color='#e2e8f0')
+
+        for y, count in zip(y_pos, counts_sorted):
+            ax.text(count + 0.3, y, str(count), va='center', fontsize=11,
+                    fontweight='bold', color='#e2e8f0')
         
         plt.tight_layout()
         images['keywords'] = plot_to_base64(fig)
     
     if rating_list and len(rating_list) > 0:
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.hist(rating_list, bins=[0, 1, 2, 3, 4, 5, 6], color='#14b8a6', 
-                edgecolor='#0ea5e9', linewidth=2, alpha=0.8)
+        sns.histplot(rating_list, bins=[0, 1, 2, 3, 4, 5, 6], kde=True,
+                     color='#14b8a6', edgecolor='#0ea5e9', linewidth=1.5,
+                     ax=ax, kde_kws={'color': '#f59e0b', 'linewidth': 2})
         ax.set_title("⭐ Rating Distribution", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
         ax.set_xlabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
@@ -593,15 +604,15 @@ def generate_visualizations(reviews):
         images['rating_histogram'] = plot_to_base64(fig)
         
         fig, ax = plt.subplots(figsize=(10, 6))
-        bp = ax.boxplot([rating_list], vert=False, patch_artist=True, widths=0.6)
-        for patch in bp['boxes']:
-            patch.set_facecolor('#14b8a6')
-            patch.set_alpha(0.7)
-        for element in ['whiskers', 'fliers', 'means', 'medians', 'caps']:
-            plt.setp(bp[element], color='#e2e8f0', linewidth=2)
+        sns.violinplot(x=rating_list, orient='h', inner='quartile',
+                       color='#0ea5e9', linewidth=1.5, ax=ax)
+        mean_val = np.mean(rating_list)
+        ax.scatter([mean_val], [0], color='#f59e0b', s=90, zorder=3, label='Mean')
         ax.set_title("📊 Rating Spread Analysis", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
         ax.set_xlabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_yticks([])
+        ax.legend(fontsize=12)
         ax.grid(axis='x', alpha=0.3, linestyle='--')
         ax.set_facecolor('#0f172a')
         plt.tight_layout()
@@ -835,23 +846,19 @@ def generate_visualizations(reviews):
         
         if len(location_branches) > 1:
             branch_counts = Counter(location_branches)
-            fig, ax = plt.subplots(figsize=(12, 6))
             locations = list(branch_counts.keys())
             counts = list(branch_counts.values())
-            bars = ax.bar(range(len(locations)), counts, color='#14b8a6', 
-                         edgecolor='#0ea5e9', linewidth=2, alpha=0.85)
-            ax.set_title("📍 Branch Distribution by Location", fontsize=20, 
+            colors = sns.color_palette("viridis", len(locations))
+
+            fig, ax = plt.subplots(figsize=(10, 8))
+            wedges, _ = ax.pie(counts, colors=colors, startangle=90,
+                               wedgeprops={'width': 0.4, 'edgecolor': '#0f172a'})
+            ax.add_artist(plt.Circle((0, 0), 0.55, fc='#0f172a'))
+            ax.set_title("📍 Branch Distribution by Location", fontsize=20,
                        fontweight='bold', pad=25, color='#e2e8f0')
-            ax.set_ylabel("Number of Branches", fontsize=14, fontweight='bold', color='#e2e8f0')
-            ax.set_xticks(range(len(locations)))
-            ax.set_xticklabels(locations, rotation=45, ha='right', fontsize=10)
-            ax.grid(axis='y', alpha=0.3, linestyle='--')
-            ax.set_facecolor('#0f172a')
-            for bar, count in zip(bars, counts):
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                       str(int(count)), ha='center', va='bottom', 
-                       fontsize=12, fontweight='bold', color='#e2e8f0')
+            ax.legend(wedges, [f"{loc} ({cnt})" for loc, cnt in zip(locations, counts)],
+                      loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10, frameon=False)
+            fig.patch.set_facecolor('#0f172a')
             plt.tight_layout()
             images['branch_distribution'] = plot_to_base64(fig)
     except Exception as e:
@@ -862,15 +869,18 @@ def generate_visualizations(reviews):
     
     if len(review_lengths) > 0:
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.hist(review_lengths, bins=20, color='#0ea5e9', edgecolor='#14b8a6', 
-               linewidth=2, alpha=0.8)
+        sns.histplot(review_lengths, bins=20, kde=True, color='#0ea5e9',
+                     edgecolor='#14b8a6', linewidth=1.5, ax=ax,
+                     kde_kws={'color': '#f59e0b', 'linewidth': 2})
+        p25, p50, p75 = np.percentile(review_lengths, [25, 50, 75])
+        ax.axvline(x=p25, color='#94a3b8', linestyle='--', linewidth=1.5, label='25th')
+        ax.axvline(x=p50, color='#f59e0b', linestyle='--', linewidth=2, label='Median')
+        ax.axvline(x=p75, color='#22c55e', linestyle='--', linewidth=1.5, label='75th')
         ax.set_title("📝 Review Length Distribution", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
         ax.set_xlabel("Character Count", fontsize=14, fontweight='bold', color='#e2e8f0')
         ax.set_ylabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.axvline(x=np.mean(review_lengths), color='#f59e0b', linestyle='--', 
-                  linewidth=2.5, label=f"Avg: {np.mean(review_lengths):.0f}")
-        ax.legend(fontsize=12)
+        ax.legend(fontsize=11)
         ax.grid(axis='y', alpha=0.3, linestyle='--')
         ax.set_facecolor('#0f172a')
         plt.tight_layout()
@@ -878,14 +888,19 @@ def generate_visualizations(reviews):
         
         if rating_list and len(rating_list) == len(review_lengths):
             fig, ax = plt.subplots(figsize=(12, 6))
-            ax.scatter(review_lengths, rating_list, s=100, alpha=0.6, 
-                      c='#14b8a6', edgecolor='#0ea5e9', linewidth=1.5)
+            hb = ax.hexbin(review_lengths, rating_list, gridsize=25, cmap='viridis',
+                           mincnt=1, linewidths=0.2, edgecolors='#0f172a')
             ax.set_title("📊 Review Length vs Rating", fontsize=20, fontweight='bold', 
                        pad=25, color='#e2e8f0')
             ax.set_xlabel("Review Length (characters)", fontsize=14, fontweight='bold', color='#e2e8f0')
             ax.set_ylabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
             ax.grid(alpha=0.3, linestyle='--')
             ax.set_facecolor('#0f172a')
+            cb = fig.colorbar(hb, ax=ax)
+            cb.set_label("Review Density", color='#e2e8f0')
+            cb.ax.yaxis.set_tick_params(color='#e2e8f0')
+            for label in cb.ax.get_yticklabels():
+                label.set_color('#e2e8f0')
             plt.tight_layout()
             images['length_vs_rating'] = plot_to_base64(fig)
     
@@ -898,21 +913,24 @@ def generate_visualizations(reviews):
     
     if category_counts:
         fig, ax = plt.subplots(figsize=(12, 7))
-        sorted_cats = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
-        cats = [c[0] for c in sorted_cats]
+        sorted_cats = sorted(category_counts.items(), key=lambda x: x[1])
+        cats = [c[0].replace('_', ' ').title() for c in sorted_cats]
         vals = [c[1] for c in sorted_cats]
-        # Use dark theme red/orange gradient
-        colors_palette = ['#ef4444', '#f87171', '#fb923c', '#f59e0b', '#fbbf24', '#fb7185', '#fca5a5', '#fdba74']
-        colors = [colors_palette[i % len(colors_palette)] for i in range(len(cats))]
-        bars = ax.barh(cats, vals, color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+        y_pos = np.arange(len(cats))
+        colors = plt.cm.OrRd(np.array(vals) / max(vals))
+
+        ax.hlines(y_pos, 0, vals, color='#334155', linewidth=3, alpha=0.7)
+        ax.scatter(vals, y_pos, s=200, c=colors, edgecolor='#e2e8f0',
+                   linewidth=1.2, zorder=3)
         ax.set_title("🔍 Complaint Category Frequency", fontsize=20, fontweight='bold', 
                    pad=25, color='#e2e8f0')
         ax.set_xlabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.invert_yaxis()
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(cats, color='#e2e8f0')
         ax.grid(axis='x', alpha=0.3, linestyle='--')
         ax.set_facecolor('#0f172a')
-        for i, (bar, val) in enumerate(zip(bars, vals)):
-            ax.text(val + 0.5, i, str(val), va='center', fontsize=11, 
+        for y, val in zip(y_pos, vals):
+            ax.text(val + 0.5, y, str(val), va='center', fontsize=11, 
                    fontweight='bold', color='#e2e8f0')
         plt.tight_layout()
         images['category_frequency'] = plot_to_base64(fig)
