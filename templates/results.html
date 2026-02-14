@@ -610,6 +610,92 @@
         </div>
     </div>
 
+    {% if visualizations.kpi_metrics %}
+    <div class="category-section">
+        <h4>
+            <i class="fas fa-tachometer-alt"></i>
+            Key Performance Indicators
+        </h4>
+        <div class="stats-grid" style="margin-top: 2rem;">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.avg_rating }}</h3>
+                <p>Average Rating</p>
+            </div>
+            
+            <div class="stat-card positive">
+                <div class="stat-icon">
+                    <i class="fas fa-thumbs-up"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.positive_pct }}%</h3>
+                <p>Positive Reviews</p>
+            </div>
+            
+            <div class="stat-card negative">
+                <div class="stat-icon">
+                    <i class="fas fa-thumbs-down"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.negative_pct }}%</h3>
+                <p>Negative Reviews</p>
+            </div>
+            
+            <div class="stat-card neutral">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.avg_sentiment_score }}</h3>
+                <p>Sentiment Score</p>
+            </div>
+            
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-rupee-sign"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.avg_cost }}</h3>
+                <p>Avg Cost for Two</p>
+            </div>
+            
+            <div class="stat-card {{ 'positive' if visualizations.kpi_metrics.online_order == 'Yes' else 'neutral' }}">
+                <div class="stat-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.online_order }}</h3>
+                <p>Online Order</p>
+            </div>
+            
+            <div class="stat-card {{ 'positive' if visualizations.kpi_metrics.table_booking == 'Yes' else 'neutral' }}">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.table_booking }}</h3>
+                <p>Table Booking</p>
+            </div>
+            
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <h3 style="font-size: 1.2rem;">{{ visualizations.kpi_metrics.cuisines[:20] }}{{ '...' if visualizations.kpi_metrics.cuisines|length > 20 else '' }}</h3>
+                <p>Cuisine Type</p>
+            </div>
+        </div>
+        
+        {% if visualizations.kpi_metrics.address != 'N/A' %}
+        <div style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 1rem;">
+            <h5 style="color: #1e293b; margin-bottom: 1rem;">
+                <i class="fas fa-map-marker-alt"></i> Restaurant Location
+            </h5>
+            <p style="margin: 0; color: #475569;">{{ visualizations.kpi_metrics.address }}</p>
+            {% if visualizations.kpi_metrics.location != 'N/A' %}
+            <p style="margin: 0.5rem 0 0 0; color: #475569;"><strong>Location:</strong> {{ visualizations.kpi_metrics.location }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     
     {% if source_counts %}
     <div class="source-breakdown">
@@ -763,6 +849,234 @@
                         Sentiment Trend Over Time
                     </h4>
                     <img src="{{ visualizations.sentiment_trend }}" alt="Sentiment Trend" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.ratings_by_category %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-star-half-alt"></i>
+                        Ratings by Category
+                    </h4>
+                    <img src="{{ visualizations.ratings_by_category }}" alt="Ratings by Category" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.top_items %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-trophy"></i>
+                        Top Menu Items by Popularity
+                    </h4>
+                    <img src="{{ visualizations.top_items }}" alt="Top Menu Items" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.sentiment %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-smile-wink"></i>
+                        Sentiment Analysis
+                    </h4>
+                    <img src="{{ visualizations.sentiment }}" alt="Sentiment Analysis" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.problem_areas %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Problem Areas by Negative Sentiment
+                    </h4>
+                    <img src="{{ visualizations.problem_areas }}" alt="Problem Areas" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.keywords %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-key"></i>
+                        Top Customer Concerns & Keywords
+                    </h4>
+                    <img src="{{ visualizations.keywords }}" alt="Keywords Analysis" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.rating_histogram %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-chart-bar"></i>
+                        Rating Distribution
+                    </h4>
+                    <img src="{{ visualizations.rating_histogram }}" alt="Rating Histogram" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.rating_boxplot %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-box"></i>
+                        Rating Spread Analysis
+                    </h4>
+                    <img src="{{ visualizations.rating_boxplot }}" alt="Rating Boxplot" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.online_order_rating %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-shopping-cart"></i>
+                        Online Order vs Rating
+                    </h4>
+                    <img src="{{ visualizations.online_order_rating }}" alt="Online Order Rating" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.table_booking_rating %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-calendar-check"></i>
+                        Table Booking vs Rating
+                    </h4>
+                    <img src="{{ visualizations.table_booking_rating }}" alt="Table Booking Rating" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.cost_vs_rating %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-rupee-sign"></i>
+                        Cost vs Rating Analysis
+                    </h4>
+                    <img src="{{ visualizations.cost_vs_rating }}" alt="Cost vs Rating" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.cost_distribution %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-money-bill-wave"></i>
+                        Cost Distribution
+                    </h4>
+                    <img src="{{ visualizations.cost_distribution }}" alt="Cost Distribution" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.cuisine_distribution %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-utensils"></i>
+                        Cuisine Type Distribution
+                    </h4>
+                    <img src="{{ visualizations.cuisine_distribution }}" alt="Cuisine Distribution" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.branch_distribution %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-map-marker-alt"></i>
+                        Branch Distribution by Location
+                    </h4>
+                    <img src="{{ visualizations.branch_distribution }}" alt="Branch Distribution" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.review_length_dist %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-ruler-horizontal"></i>
+                        Review Length Distribution
+                    </h4>
+                    <img src="{{ visualizations.review_length_dist }}" alt="Review Length Distribution" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.length_vs_rating %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-arrows-alt-h"></i>
+                        Review Length vs Rating
+                    </h4>
+                    <img src="{{ visualizations.length_vs_rating }}" alt="Length vs Rating" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.category_frequency %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-list-ul"></i>
+                        Complaint Category Frequency
+                    </h4>
+                    <img src="{{ visualizations.category_frequency }}" alt="Category Frequency" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.correlation_heatmap %}
+            <div class="col-md-12">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-project-diagram"></i>
+                        Feature Correlation Heatmap
+                    </h4>
+                    <img src="{{ visualizations.correlation_heatmap }}" alt="Correlation Heatmap" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.top_rated_items %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-medal"></i>
+                        Top 5 Highest Rated Menu Items
+                    </h4>
+                    <img src="{{ visualizations.top_rated_items }}" alt="Top Rated Items" loading="lazy">
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if visualizations.bestseller_distribution %}
+            <div class="col-md-6">
+                <div class="viz-card">
+                    <h4>
+                        <i class="fas fa-fire"></i>
+                        Best Seller Distribution
+                    </h4>
+                    <img src="{{ visualizations.bestseller_distribution }}" alt="Bestseller Distribution" loading="lazy">
                 </div>
             </div>
             {% endif %}

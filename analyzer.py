@@ -186,6 +186,57 @@ def generate_visualizations(reviews):
     
     restaurant_name = reviews[0].restaurant
     restaurant_info = get_restaurant_info(restaurant_name)
+    
+    kpi_metrics = {
+        'total_reviews': len(reviews),
+        'avg_rating': 0,
+        'positive_pct': 0,
+        'negative_pct': 0,
+        'avg_sentiment_score': 0,
+        'avg_cost': 'N/A',
+        'online_order': 'N/A',
+        'table_booking': 'N/A',
+        'address': restaurant_info.get('address', 'N/A'),
+        'location': 'N/A',
+        'cuisines': restaurant_info.get('cuisines', 'N/A')
+    }
+    
+    rating_list = [r.rating for r in reviews if hasattr(r, 'rating') and r.rating]
+    sentiment_list = [r.sentiment for r in reviews if hasattr(r, 'sentiment') and r.sentiment]
+    score_list = [r.score for r in reviews if hasattr(r, 'score') and r.score is not None]
+    
+    if rating_list:
+        kpi_metrics['avg_rating'] = round(np.mean(rating_list), 2)
+    if sentiment_list:
+        pos_count = sentiment_list.count('Positive')
+        neg_count = sentiment_list.count('Negative')
+        total = len(sentiment_list)
+        kpi_metrics['positive_pct'] = round((pos_count / total) * 100, 1)
+        kpi_metrics['negative_pct'] = round((neg_count / total) * 100, 1)
+    if score_list:
+        kpi_metrics['avg_sentiment_score'] = round(np.mean(score_list), 3)
+    
+    try:
+        zomato_path = os.path.join(DATASET_FOLDER, "zomato.csv")
+        if os.path.exists(zomato_path):
+            df_zom = pd.read_csv(zomato_path, encoding="utf-8", on_bad_lines="skip")
+            df_zom.columns = df_zom.columns.str.strip()
+            if 'name' in df_zom.columns:
+                df_rest = df_zom[df_zom['name'].astype(str).str.contains(restaurant_name, case=False, na=False)]
+                if not df_rest.empty:
+                    row = df_rest.iloc[0]
+                    if 'cost' in df_rest.columns and pd.notna(row['cost']):
+                        kpi_metrics['avg_cost'] = str(row['cost'])
+                    if 'online_order' in df_rest.columns and pd.notna(row['online_order']):
+                        kpi_metrics['online_order'] = str(row['online_order'])
+                    if 'book_table' in df_rest.columns and pd.notna(row['book_table']):
+                        kpi_metrics['table_booking'] = str(row['book_table'])
+                    if 'location' in df_rest.columns and pd.notna(row['location']):
+                        kpi_metrics['location'] = str(row['location'])
+    except Exception as e:
+        print(f"Error loading zomato.csv for KPIs: {e}")
+    
+    images['kpi_metrics'] = kpi_metrics
     images['restaurant_info'] = restaurant_info
     
     ratings_by_category = {}
@@ -429,36 +480,350 @@ def generate_visualizations(reviews):
         plt.tight_layout()
         images['keywords'] = plot_to_base64(fig)
     
-    return images
-        ax1.set_xlabel("Count", fontsize=12, fontweight='bold', color='#e2e8f0')
-        ax1.invert_yaxis()
-        ax1.grid(axis='x', alpha=0.3, linestyle='--')
-        ax1.set_facecolor('#0f172a')
-        
-        for bar, val in zip(bars1, neg_vals):
-            ax1.text(val + 0.2, bar.get_y() + bar.get_height()/2, str(int(val)), 
-                    va='center', fontsize=10, fontweight='bold', color='#fca5a5')
-        
-        pos_issues = sorted([(cat, category_sentiment_map[cat].get("Positive", 0)) 
-                            for cat in category_sentiment_map.keys()],
-                           key=lambda x: x[1], reverse=True)[:8]
-        pos_cats, pos_vals = zip(*pos_issues) if pos_issues else ([], [])
-        
-        bars2 = ax2.barh(pos_cats, pos_vals, color='#22c55e', edgecolor='#16a34a', 
-                        linewidth=2, alpha=0.8)
-        ax2.set_title("🟢 Top Praised Attributes", fontsize=16, fontweight='bold', 
-                     color='#e2e8f0')
-        ax2.set_xlabel("Count", fontsize=12, fontweight='bold', color='#e2e8f0')
-        ax2.invert_yaxis()
-        ax2.grid(axis='x', alpha=0.3, linestyle='--')
-        ax2.set_facecolor('#0f172a')
-        
-        for bar, val in zip(bars2, pos_vals):
-            ax2.text(val + 0.2, bar.get_y() + bar.get_height()/2, str(int(val)), 
-                    va='center', fontsize=10, fontweight='bold', color='#bbf7d0')
-        
+    if rating_list and len(rating_list) > 0:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.hist(rating_list, bins=[0, 1, 2, 3, 4, 5, 6], color='#14b8a6', 
+                edgecolor='#0ea5e9', linewidth=2, alpha=0.8)
+        ax.set_title("⭐ Rating Distribution", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_ylabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.axvline(x=kpi_metrics['avg_rating'], color='#f59e0b', linestyle='--', 
+                  linewidth=2.5, label=f"Avg: {kpi_metrics['avg_rating']}")
+        ax.legend(fontsize=12)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
         plt.tight_layout()
-        images['positive_vs_negative'] = plot_to_base64(fig)
+        images['rating_histogram'] = plot_to_base64(fig)
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        bp = ax.boxplot([rating_list], vert=False, patch_artist=True, widths=0.6)
+        for patch in bp['boxes']:
+            patch.set_facecolor('#14b8a6')
+            patch.set_alpha(0.7)
+        for element in ['whiskers', 'fliers', 'means', 'medians', 'caps']:
+            plt.setp(bp[element], color='#e2e8f0', linewidth=2)
+        ax.set_title("📊 Rating Spread Analysis", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
+        plt.tight_layout()
+        images['rating_boxplot'] = plot_to_base64(fig)
+    
+    try:
+        zomato_path = os.path.join(DATASET_FOLDER, "zomato.csv")
+        if os.path.exists(zomato_path):
+            df_zom = pd.read_csv(zomato_path, encoding="utf-8", on_bad_lines="skip")
+            df_zom.columns = df_zom.columns.str.strip()
+            if 'name' in df_zom.columns and 'rate' in df_zom.columns:
+                df_rest = df_zom[df_zom['name'].astype(str).str.contains(restaurant_name, case=False, na=False)]
+                if not df_rest.empty:
+                    if 'online_order' in df_zom.columns:
+                        online_groups = df_rest.groupby('online_order')['rate'].apply(
+                            lambda x: pd.to_numeric(x.astype(str).str.replace('/5', ''), errors='coerce').mean()
+                        ).dropna()
+                        if len(online_groups) > 0:
+                            fig, ax = plt.subplots(figsize=(10, 6))
+                            colors = ['#22c55e' if idx == 'Yes' else '#ef4444' for idx in online_groups.index]
+                            bars = ax.bar(online_groups.index, online_groups.values, 
+                                         color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+                            ax.set_title("🛒 Online Order Availability vs Avg Rating", 
+                                       fontsize=18, fontweight='bold', pad=25, color='#e2e8f0')
+                            ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                            ax.set_ylim(0, 5.5)
+                            ax.grid(axis='y', alpha=0.3, linestyle='--')
+                            ax.set_facecolor('#0f172a')
+                            for bar in bars:
+                                height = bar.get_height()
+                                ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                                       f'{height:.2f}', ha='center', va='bottom', 
+                                       fontsize=12, fontweight='bold', color='#e2e8f0')
+                            plt.tight_layout()
+                            images['online_order_rating'] = plot_to_base64(fig)
+                    
+                    if 'book_table' in df_zom.columns:
+                        table_groups = df_rest.groupby('book_table')['rate'].apply(
+                            lambda x: pd.to_numeric(x.astype(str).str.replace('/5', ''), errors='coerce').mean()
+                        ).dropna()
+                        if len(table_groups) > 0:
+                            fig, ax = plt.subplots(figsize=(10, 6))
+                            colors = ['#22c55e' if idx == 'Yes' else '#ef4444' for idx in table_groups.index]
+                            bars = ax.bar(table_groups.index, table_groups.values, 
+                                         color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+                            ax.set_title("📅 Table Booking Availability vs Avg Rating", 
+                                       fontsize=18, fontweight='bold', pad=25, color='#e2e8f0')
+                            ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                            ax.set_ylim(0, 5.5)
+                            ax.grid(axis='y', alpha=0.3, linestyle='--')
+                            ax.set_facecolor('#0f172a')
+                            for bar in bars:
+                                height = bar.get_height()
+                                ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                                       f'{height:.2f}', ha='center', va='bottom', 
+                                       fontsize=12, fontweight='bold', color='#e2e8f0')
+                            plt.tight_layout()
+                            images['table_booking_rating'] = plot_to_base64(fig)
+                    
+                    if 'cost' in df_zom.columns and not df_rest.empty:
+                        df_cost = df_rest.copy()
+                        df_cost['cost_num'] = pd.to_numeric(df_cost['cost'].astype(str).str.replace(',', ''), errors='coerce')
+                        df_cost['rate_num'] = pd.to_numeric(df_cost['rate'].astype(str).str.replace('/5', ''), errors='coerce')
+                        df_cost_clean = df_cost[['cost_num', 'rate_num']].dropna()
+                        
+                        if len(df_cost_clean) > 0:
+                            fig, ax = plt.subplots(figsize=(12, 6))
+                            ax.scatter(df_cost_clean['cost_num'], df_cost_clean['rate_num'], 
+                                      s=100, alpha=0.7, c='#14b8a6', edgecolor='#0ea5e9', linewidth=2)
+                            ax.set_title("💰 Cost vs Rating Analysis", fontsize=20, 
+                                       fontweight='bold', pad=25, color='#e2e8f0')
+                            ax.set_xlabel("Cost for Two", fontsize=14, fontweight='bold', color='#e2e8f0')
+                            ax.set_ylabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                            ax.grid(alpha=0.3, linestyle='--')
+                            ax.set_facecolor('#0f172a')
+                            plt.tight_layout()
+                            images['cost_vs_rating'] = plot_to_base64(fig)
+                            
+                            fig, ax = plt.subplots(figsize=(12, 6))
+                            ax.hist(df_cost_clean['cost_num'], bins=10, color='#22c55e', 
+                                   edgecolor='#14b8a6', linewidth=2, alpha=0.8)
+                            ax.set_title("💵 Cost Distribution", fontsize=20, fontweight='bold', 
+                                       pad=25, color='#e2e8f0')
+                            ax.set_xlabel("Cost for Two", fontsize=14, fontweight='bold', color='#e2e8f0')
+                            ax.set_ylabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
+                            ax.axvline(x=df_cost_clean['cost_num'].mean(), color='#f59e0b', 
+                                     linestyle='--', linewidth=2.5, 
+                                     label=f"Avg: ₹{df_cost_clean['cost_num'].mean():.0f}")
+                            ax.legend(fontsize=12)
+                            ax.grid(axis='y', alpha=0.3, linestyle='--')
+                            ax.set_facecolor('#0f172a')
+                            plt.tight_layout()
+                            images['cost_distribution'] = plot_to_base64(fig)
+    except Exception as e:
+        print(f"Error creating cost/online order charts: {e}")
+    
+    try:
+        cuisine_list = []
+        for fname in ['zomato.csv', 'mumbaires.csv']:
+            fpath = os.path.join(DATASET_FOLDER, fname)
+            if os.path.exists(fpath):
+                df = pd.read_csv(fpath, encoding="utf-8", on_bad_lines="skip")
+                df.columns = df.columns.str.strip()
+                cuisine_col = 'cuisines' if 'cuisines' in df.columns else 'Cousines' if 'Cousines' in df.columns else None
+                name_col = 'name' if 'name' in df.columns else 'Restaurant Name' if 'Restaurant Name' in df.columns else None
+                
+                if cuisine_col and name_col:
+                    df_rest = df[df[name_col].astype(str).str.contains(restaurant_name, case=False, na=False)]
+                    for _, row in df_rest.iterrows():
+                        cuisines_str = str(row[cuisine_col])
+                        if cuisines_str and cuisines_str != 'nan':
+                            cuisine_list.extend([c.strip() for c in cuisines_str.split(',') if c.strip()])
+        
+        if cuisine_list:
+            cuisine_counts = Counter(cuisine_list)
+            top_cuisines = dict(cuisine_counts.most_common(10))
+            
+            fig, ax = plt.subplots(figsize=(12, 7))
+            cuisines = list(top_cuisines.keys())
+            counts = list(top_cuisines.values())
+            colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(cuisines)))
+            bars = ax.barh(cuisines, counts, color=colors, edgecolor='#14b8a6', 
+                          linewidth=2, alpha=0.85)
+            ax.set_title("🍽️ Cuisine Type Distribution", fontsize=20, fontweight='bold', 
+                       pad=25, color='#e2e8f0')
+            ax.set_xlabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.invert_yaxis()
+            ax.grid(axis='x', alpha=0.3, linestyle='--')
+            ax.set_facecolor('#0f172a')
+            for i, (bar, count) in enumerate(zip(bars, counts)):
+                ax.text(count + 0.2, i, str(count), va='center', 
+                       fontsize=11, fontweight='bold', color='#22c55e')
+            plt.tight_layout()
+            images['cuisine_distribution'] = plot_to_base64(fig)
+    except Exception as e:
+        print(f"Error creating cuisine charts: {e}")
+    
+    try:
+        location_branches = []
+        for fname in ['zomato.csv', 'mumbaires.csv']:
+            fpath = os.path.join(DATASET_FOLDER, fname)
+            if os.path.exists(fpath):
+                df = pd.read_csv(fpath, encoding="utf-8", on_bad_lines="skip")
+                df.columns = df.columns.str.strip()
+                name_col = 'name' if 'name' in df.columns else 'Restaurant Name' if 'Restaurant Name' in df.columns else None
+                loc_col = 'location' if 'location' in df.columns else 'Address' if 'Address' in df.columns else None
+                
+                if name_col and loc_col:
+                    df_rest = df[df[name_col].astype(str).str.contains(restaurant_name, case=False, na=False)]
+                    for _, row in df_rest.iterrows():
+                        loc = str(row[loc_col])
+                        if loc and loc != 'nan':
+                            location_branches.append(loc)
+        
+        if len(location_branches) > 1:
+            branch_counts = Counter(location_branches)
+            fig, ax = plt.subplots(figsize=(12, 6))
+            locations = list(branch_counts.keys())
+            counts = list(branch_counts.values())
+            bars = ax.bar(range(len(locations)), counts, color='#14b8a6', 
+                         edgecolor='#0ea5e9', linewidth=2, alpha=0.85)
+            ax.set_title("📍 Branch Distribution by Location", fontsize=20, 
+                       fontweight='bold', pad=25, color='#e2e8f0')
+            ax.set_ylabel("Number of Branches", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.set_xticks(range(len(locations)))
+            ax.set_xticklabels(locations, rotation=45, ha='right', fontsize=10)
+            ax.grid(axis='y', alpha=0.3, linestyle='--')
+            ax.set_facecolor('#0f172a')
+            for bar, count in zip(bars, counts):
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                       str(int(count)), ha='center', va='bottom', 
+                       fontsize=12, fontweight='bold', color='#e2e8f0')
+            plt.tight_layout()
+            images['branch_distribution'] = plot_to_base64(fig)
+    except Exception as e:
+        print(f"Error creating branch chart: {e}")
+    
+    review_lengths = [len(r.text) if hasattr(r, 'text') and r.text else 0 for r in reviews]
+    review_lengths = [l for l in review_lengths if l > 0]
+    
+    if len(review_lengths) > 0:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.hist(review_lengths, bins=20, color='#0ea5e9', edgecolor='#14b8a6', 
+               linewidth=2, alpha=0.8)
+        ax.set_title("📝 Review Length Distribution", fontsize=20, fontweight='bold', 
+                    pad=25, color='#e2e8f0')
+        ax.set_xlabel("Character Count", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_ylabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.axvline(x=np.mean(review_lengths), color='#f59e0b', linestyle='--', 
+                  linewidth=2.5, label=f"Avg: {np.mean(review_lengths):.0f}")
+        ax.legend(fontsize=12)
+        ax.grid(axis='y', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
+        plt.tight_layout()
+        images['review_length_dist'] = plot_to_base64(fig)
+        
+        if rating_list and len(rating_list) == len(review_lengths):
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.scatter(review_lengths, rating_list, s=100, alpha=0.6, 
+                      c='#14b8a6', edgecolor='#0ea5e9', linewidth=1.5)
+            ax.set_title("📊 Review Length vs Rating", fontsize=20, fontweight='bold', 
+                       pad=25, color='#e2e8f0')
+            ax.set_xlabel("Review Length (characters)", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.set_ylabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.grid(alpha=0.3, linestyle='--')
+            ax.set_facecolor('#0f172a')
+            plt.tight_layout()
+            images['length_vs_rating'] = plot_to_base64(fig)
+    
+    category_counts = {}
+    for r in reviews:
+        if hasattr(r, 'categories') and r.categories:
+            cats = [c.strip() for c in r.categories.split(',') if c.strip()]
+            for cat in cats:
+                category_counts[cat] = category_counts.get(cat, 0) + 1
+    
+    if category_counts:
+        fig, ax = plt.subplots(figsize=(12, 7))
+        sorted_cats = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
+        cats = [c[0] for c in sorted_cats]
+        vals = [c[1] for c in sorted_cats]
+        colors = plt.cm.Reds(np.linspace(0.4, 0.9, len(cats)))
+        bars = ax.barh(cats, vals, color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+        ax.set_title("🔍 Complaint Category Frequency", fontsize=20, fontweight='bold', 
+                   pad=25, color='#e2e8f0')
+        ax.set_xlabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.invert_yaxis()
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
+        for i, (bar, val) in enumerate(zip(bars, vals)):
+            ax.text(val + 0.5, i, str(val), va='center', fontsize=11, 
+                   fontweight='bold', color='#22c55e')
+        plt.tight_layout()
+        images['category_frequency'] = plot_to_base64(fig)
+    
+    try:
+        corr_data = []
+        for r in reviews:
+            row_data = {}
+            if hasattr(r, 'rating') and r.rating:
+                row_data['rating'] = r.rating
+            if hasattr(r, 'score') and r.score is not None:
+                row_data['sentiment_score'] = r.score
+            if hasattr(r, 'text') and r.text:
+                row_data['review_length'] = len(r.text)
+            if row_data:
+                corr_data.append(row_data)
+        
+        if len(corr_data) > 2:
+            df_corr = pd.DataFrame(corr_data)
+            correlation_matrix = df_corr.corr()
+            
+            if not correlation_matrix.empty:
+                fig, ax = plt.subplots(figsize=(10, 8))
+                sns.heatmap(correlation_matrix, annot=True, fmt='.2f', cmap='RdYlGn', 
+                           center=0, linewidths=2, linecolor='#0f172a', 
+                           cbar_kws={'label': 'Correlation'}, ax=ax)
+                ax.set_title("🔗 Feature Correlation Heatmap", fontsize=20, 
+                           fontweight='bold', pad=25, color='#e2e8f0')
+                ax.set_facecolor('#0f172a')
+                plt.tight_layout()
+                images['correlation_heatmap'] = plot_to_base64(fig)
+    except Exception as e:
+        print(f"Error creating correlation heatmap: {e}")
+    
+    try:
+        zomato2_path = os.path.join(DATASET_FOLDER, "zomato2.csv")
+        if os.path.exists(zomato2_path):
+            df_zomato2 = pd.read_csv(zomato2_path, encoding="utf-8", on_bad_lines="skip")
+            df_zomato2.columns = df_zomato2.columns.str.strip()
+            
+            if 'Restaurant_Name' in df_zomato2.columns:
+                df_items = df_zomato2[df_zomato2['Restaurant_Name'].astype(str).str.contains(
+                    restaurant_name, case=False, na=False, regex=False
+                )]
+                
+                if not df_items.empty and 'Item_Name' in df_items.columns and 'Average_Rating' in df_items.columns:
+                    top_rated = df_items.nlargest(5, 'Average_Rating')[['Item_Name', 'Average_Rating']].copy()
+                    
+                    if not top_rated.empty:
+                        fig, ax = plt.subplots(figsize=(12, 6))
+                        items = [str(item)[:30] for item in top_rated['Item_Name']]
+                        ratings = top_rated['Average_Rating'].fillna(0)
+                        colors = plt.cm.YlOrRd(np.linspace(0.5, 0.9, len(items)))
+                        bars = ax.barh(items, ratings, color=colors, edgecolor='#14b8a6', 
+                                      linewidth=2, alpha=0.85)
+                        ax.set_title("⭐ Top 5 Highest Rated Menu Items", fontsize=20, 
+                                   fontweight='bold', pad=25, color='#e2e8f0')
+                        ax.set_xlabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                        ax.invert_yaxis()
+                        ax.set_xlim(0, 5.5)
+                        ax.grid(axis='x', alpha=0.3, linestyle='--')
+                        ax.set_facecolor('#0f172a')
+                        for i, (bar, rating) in enumerate(zip(bars, ratings)):
+                            ax.text(rating + 0.1, i, f'{rating:.1f}', va='center', 
+                                   fontsize=11, fontweight='bold', color='#fbbf24')
+                        plt.tight_layout()
+                        images['top_rated_items'] = plot_to_base64(fig)
+                    
+                    if 'Best_Seller' in df_items.columns:
+                        bestseller_count = (df_items['Best_Seller'] == 'BESTSELLER').sum()
+                        total_items = len(df_items)
+                        
+                        fig, ax = plt.subplots(figsize=(8, 8))
+                        sizes = [bestseller_count, total_items - bestseller_count]
+                        labels = [f'Best Sellers\n({bestseller_count})', 
+                                 f'Regular Items\n({total_items - bestseller_count})']
+                        colors = ['#fbbf24', '#64748b']
+                        explode = (0.1, 0)
+                        ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', 
+                              startangle=90, explode=explode, textprops={'fontsize': 12, 'color': '#e2e8f0'})
+                        ax.set_title("🏆 Best Seller Distribution", fontsize=20, 
+                                   fontweight='bold', pad=25, color='#e2e8f0')
+                        plt.tight_layout()
+                        images['bestseller_distribution'] = plot_to_base64(fig)
+    except Exception as e:
+        print(f"Error creating extended menu charts: {e}")
     
     return images
 
