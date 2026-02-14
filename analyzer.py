@@ -70,7 +70,7 @@ def categorize_complaints(text):
 
 def plot_to_base64(fig):
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', bbox_inches='tight', dpi=120, facecolor='white')
+    fig.savefig(buf, format='png', bbox_inches='tight', dpi=120, facecolor='#0f172a')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     plt.close(fig)
@@ -192,7 +192,6 @@ def generate_visualizations(reviews):
         'avg_rating': 0,
         'positive_pct': 0,
         'negative_pct': 0,
-        'avg_sentiment_score': 0,
         'avg_cost': 'N/A',
         'online_order': 'N/A',
         'table_booking': 'N/A',
@@ -203,7 +202,6 @@ def generate_visualizations(reviews):
     
     rating_list = [r.rating for r in reviews if hasattr(r, 'rating') and r.rating]
     sentiment_list = [r.sentiment for r in reviews if hasattr(r, 'sentiment') and r.sentiment]
-    score_list = [r.score for r in reviews if hasattr(r, 'score') and r.score is not None]
     
     if rating_list:
         kpi_metrics['avg_rating'] = round(np.mean(rating_list), 2)
@@ -213,55 +211,100 @@ def generate_visualizations(reviews):
         total = len(sentiment_list)
         kpi_metrics['positive_pct'] = round((pos_count / total) * 100, 1)
         kpi_metrics['negative_pct'] = round((neg_count / total) * 100, 1)
-    if score_list:
-        kpi_metrics['avg_sentiment_score'] = round(np.mean(score_list), 3)
     
-    try:
-        zomato_path = os.path.join(DATASET_FOLDER, "zomato.csv")
-        if os.path.exists(zomato_path):
-            df_zom = pd.read_csv(zomato_path, encoding="utf-8", on_bad_lines="skip")
-            df_zom.columns = df_zom.columns.str.strip()
-            if 'name' in df_zom.columns:
-                df_rest = df_zom[df_zom['name'].astype(str).str.contains(restaurant_name, case=False, na=False)]
-                if not df_rest.empty:
-                    row = df_rest.iloc[0]
-                    if 'cost' in df_rest.columns and pd.notna(row['cost']):
-                        kpi_metrics['avg_cost'] = str(row['cost'])
-                    if 'online_order' in df_rest.columns and pd.notna(row['online_order']):
-                        kpi_metrics['online_order'] = str(row['online_order'])
-                    if 'book_table' in df_rest.columns and pd.notna(row['book_table']):
-                        kpi_metrics['table_booking'] = str(row['book_table'])
-                    if 'location' in df_rest.columns and pd.notna(row['location']):
-                        kpi_metrics['location'] = str(row['location'])
-    except Exception as e:
-        print(f"Error loading zomato.csv for KPIs: {e}")
+    # Check ALL CSV files for KPI data (cost, online_order, table_booking, location)
+    csv_files_for_kpis = ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv']
+    for csv_file in csv_files_for_kpis:
+        try:
+            csv_path = os.path.join(DATASET_FOLDER, csv_file)
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
+                df.columns = df.columns.str.strip()
+                
+                # Find name column
+                name_col = None
+                for col in ['name', 'Restaurant Name', 'business_name', 'restaurant_name']:
+                    if col in df.columns:
+                        name_col = col
+                        break
+                
+                if name_col:
+                    df_rest = df[df[name_col].astype(str).str.contains(restaurant_name, case=False, na=False)]
+                    if not df_rest.empty:
+                        row = df_rest.iloc[0]
+                        
+                        # Cost - try different column variations
+                        if kpi_metrics['avg_cost'] == 'N/A':
+                            for cost_col in ['cost', 'approx_cost(for two people)', 'Cost', 'price']:
+                                if cost_col in df_rest.columns and pd.notna(row[cost_col]):
+                                    kpi_metrics['avg_cost'] = str(row[cost_col])
+                                    break
+                        
+                        # Online order
+                        if kpi_metrics['online_order'] == 'N/A' and 'online_order' in df_rest.columns:
+                            if pd.notna(row['online_order']):
+                                kpi_metrics['online_order'] = str(row['online_order'])
+                        
+                        # Table booking
+                        if kpi_metrics['table_booking'] == 'N/A' and 'book_table' in df_rest.columns:
+                            if pd.notna(row['book_table']):
+                                kpi_metrics['table_booking'] = str(row['book_table'])
+                        
+                        # Location - try different column variations
+                        if kpi_metrics['location'] == 'N/A':
+                            for loc_col in ['location', 'Location', 'address', 'Address', 'area']:
+                                if loc_col in df_rest.columns and pd.notna(row[loc_col]):
+                                    kpi_metrics['location'] = str(row[loc_col])
+                                    break
+        except Exception as e:
+            print(f"Error loading {csv_file} for KPIs: {e}")
     
     images['kpi_metrics'] = kpi_metrics
     images['restaurant_info'] = restaurant_info
     
+    # Aggregate ratings by category from ALL CSV files
     ratings_by_category = {}
     avg_ratings = []
     
-    try:
-        reviews_csv_path = os.path.join(DATASET_FOLDER, "reviews.csv")
-        if os.path.exists(reviews_csv_path):
-            df_reviews = pd.read_csv(reviews_csv_path, encoding="utf-8", on_bad_lines="skip")
-            df_reviews.columns = df_reviews.columns.str.strip()
-            
-            if 'business_name' in df_reviews.columns and 'rating_category' in df_reviews.columns and 'rating' in df_reviews.columns:
-                df_rest = df_reviews[df_reviews['business_name'].astype(str).str.contains(
-                    restaurant_name, case=False, na=False, regex=False
-                )]
+    csv_files_for_ratings = ['reviews.csv', 'Resreviews.csv', 'Yelpreviws.csv']
+    for csv_file in csv_files_for_ratings:
+        try:
+            csv_path = os.path.join(DATASET_FOLDER, csv_file)
+            if os.path.exists(csv_path):
+                df_reviews = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
+                df_reviews.columns = df_reviews.columns.str.strip()
                 
-                if not df_rest.empty:
-                    for cat in df_rest['rating_category'].unique():
-                        if pd.notna(cat):
-                            cat_data = df_rest[df_rest['rating_category'] == cat]['rating']
-                            ratings_by_category[cat] = list(cat_data.dropna())
+                # Try different column name variations
+                name_col = None
+                for col in ['business_name', 'Restaurant Name', 'name', 'restaurant_name', 'Business Name']:
+                    if col in df_reviews.columns:
+                        name_col = col
+                        break
+                
+                if name_col:
+                    df_rest = df_reviews[df_reviews[name_col].astype(str).str.contains(
+                        restaurant_name, case=False, na=False, regex=False
+                    )]
                     
-                    avg_ratings = df_rest['rating'].dropna().tolist()
-    except Exception as e:
-        print(f"Error reading reviews.csv: {e}")
+                    if not df_rest.empty:
+                        # Extract ratings by category
+                        if 'rating_category' in df_rest.columns and 'rating' in df_rest.columns:
+                            for cat in df_rest['rating_category'].unique():
+                                if pd.notna(cat):
+                                    cat_data = df_rest[df_rest['rating_category'] == cat]['rating']
+                                    if cat not in ratings_by_category:
+                                        ratings_by_category[cat] = []
+                                    ratings_by_category[cat].extend(list(cat_data.dropna()))
+                            
+                            avg_ratings.extend(df_rest['rating'].dropna().tolist())
+                        
+                        # Also check for direct rating column without category
+                        elif 'rating' in df_rest.columns:
+                            avg_ratings.extend(df_rest['rating'].dropna().tolist())
+                        elif 'Rating' in df_rest.columns:
+                            avg_ratings.extend(df_rest['Rating'].dropna().tolist())
+        except Exception as e:
+            print(f"Error reading {csv_file}: {e}")
     
     fig, ax = plt.subplots(figsize=(14, 7))
     categories = [c.replace('_', ' ').title() for c in ratings_by_category.keys()]
@@ -292,48 +335,100 @@ def generate_visualizations(reviews):
     plt.tight_layout()
     images['ratings_by_category'] = plot_to_base64(fig)
     
-    try:
-        zomato2_path = os.path.join(DATASET_FOLDER, "zomato2.csv")
-        if os.path.exists(zomato2_path):
-            df_zomato2 = pd.read_csv(zomato2_path, encoding="utf-8", on_bad_lines="skip")
-            df_zomato2.columns = df_zomato2.columns.str.strip()
-            
-            if 'Restaurant_Name' in df_zomato2.columns:
-                df_items = df_zomato2[df_zomato2['Restaurant_Name'].astype(str).str.contains(
-                    restaurant_name, case=False, na=False, regex=False
-                )]
+    # Aggregate menu items from ALL CSV files
+    all_menu_items = []
+    csv_files_for_menu = ['zomato2.csv', 'zomato.csv', 'mumbaires.csv']
+    
+    for csv_file in csv_files_for_menu:
+        try:
+            csv_path = os.path.join(DATASET_FOLDER, csv_file)
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
+                df.columns = df.columns.str.strip()
                 
-                if not df_items.empty and 'Item_Name' in df_items.columns and 'Average_Rating' in df_items.columns and 'Votes' in df_items.columns:
-                    top_items = df_items.nlargest(8, 'Votes')[['Item_Name', 'Average_Rating', 'Votes', 'Best_Seller']].copy()
+                # Try different column name variations
+                name_col = None
+                for col in ['Restaurant_Name', 'name', 'Restaurant Name', 'restaurant_name']:
+                    if col in df.columns:
+                        name_col = col
+                        break
+                
+                if name_col:
+                    df_items = df[df[name_col].astype(str).str.contains(
+                        restaurant_name, case=False, na=False, regex=False
+                    )]
                     
-                    if not top_items.empty:
-                        fig, ax = plt.subplots(figsize=(14, 7))
-                        items = [str(item)[:30] for item in top_items['Item_Name']]
-                        ratings = top_items['Average_Rating'].fillna(0)
-                        votes = top_items['Votes'].fillna(0)
-                        colors_items = ['#fbbf24' if bs == 'BESTSELLER' else '#14b8a6' 
-                                       for bs in top_items['Best_Seller']]
+                    if not df_items.empty:
+                        # Check for menu item columns
+                        item_col = None
+                        for col in ['Item_Name', 'dish_name', 'menu_item', 'item', 'dish']:
+                            if col in df_items.columns:
+                                item_col = col
+                                break
                         
-                        bars = ax.bar(items, votes, color=colors_items, edgecolor='#0ea5e9', 
-                                     linewidth=2, alpha=0.85)
+                        rating_col = None
+                        for col in ['Average_Rating', 'rating', 'item_rating', 'rate']:
+                            if col in df_items.columns:
+                                rating_col = col
+                                break
                         
-                        ax.set_title("🏆 Top Menu Items by Popularity", fontsize=20, fontweight='bold', 
-                                    pad=25, color='#e2e8f0')
-                        ax.set_ylabel("Number of Votes", fontsize=14, fontweight='bold', color='#e2e8f0')
-                        ax.set_facecolor('#0f172a')
-                        ax.grid(axis='y', alpha=0.3, linestyle='--')
-                        plt.xticks(rotation=45, ha='right', fontsize=10)
+                        votes_col = None
+                        for col in ['Votes', 'votes', 'popularity', 'count', 'orders']:
+                            if col in df_items.columns:
+                                votes_col = col
+                                break
                         
-                        for i, (bar, rating) in enumerate(zip(bars, ratings)):
-                            height = bar.get_height()
-                            ax.text(bar.get_x() + bar.get_width()/2., height + max(votes)*0.02,
-                                   f'★{rating:.1f}', ha='center', va='bottom', fontsize=10, 
-                                   fontweight='bold', color='#fbbf24')
+                        bestseller_col = None
+                        for col in ['Best_Seller', 'bestseller', 'popular', 'best_seller']:
+                            if col in df_items.columns:
+                                bestseller_col = col
+                                break
                         
-                        plt.tight_layout()
-                        images['top_items'] = plot_to_base64(fig)
-    except Exception as e:
-        print(f"Error reading zomato2.csv: {e}")
+                        if item_col and (rating_col or votes_col):
+                            for _, row in df_items.iterrows():
+                                item_data = {
+                                    'name': str(row[item_col]) if pd.notna(row[item_col]) else 'Unknown',
+                                    'rating': pd.to_numeric(row[rating_col], errors='coerce') if rating_col else 0,
+                                    'votes': pd.to_numeric(row[votes_col], errors='coerce') if votes_col else 0,
+                                    'bestseller': str(row[bestseller_col]) if bestseller_col and pd.notna(row[bestseller_col]) else 'No'
+                                }
+                                all_menu_items.append(item_data)
+        except Exception as e:
+            print(f"Error reading menu from {csv_file}: {e}")
+    
+    if all_menu_items:
+        # Sort by votes and get top items
+        menu_df = pd.DataFrame(all_menu_items)
+        menu_df = menu_df[menu_df['votes'] > 0]  # Filter items with votes
+        if not menu_df.empty:
+            top_items = menu_df.nlargest(8, 'votes')
+            
+            fig, ax = plt.subplots(figsize=(14, 7))
+            items = [str(item)[:30] for item in top_items['name']]
+            ratings = top_items['rating'].fillna(0)
+            votes = top_items['votes'].fillna(0)
+            colors_items = ['#fbbf24' if str(bs).upper() == 'BESTSELLER' or str(bs).upper() == 'YES' else '#14b8a6' 
+                           for bs in top_items['bestseller']]
+            
+            bars = ax.bar(items, votes, color=colors_items, edgecolor='#0ea5e9', 
+                         linewidth=2, alpha=0.85)
+            
+            ax.set_title("🏆 Top Menu Items by Popularity (All Sources)", fontsize=20, fontweight='bold', 
+                        pad=25, color='#e2e8f0')
+            ax.set_ylabel("Number of Votes", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.set_facecolor('#0f172a')
+            ax.grid(axis='y', alpha=0.3, linestyle='--')
+            plt.xticks(rotation=45, ha='right', fontsize=10)
+            
+            for i, (bar, rating) in enumerate(zip(bars, ratings)):
+                height = bar.get_height()
+                if height > 0:
+                    ax.text(bar.get_x() + bar.get_width()/2., height + max(votes)*0.02,
+                           f'★{rating:.1f}', ha='center', va='bottom', fontsize=10, 
+                           fontweight='bold', color='#fbbf24')
+            
+            plt.tight_layout()
+            images['top_items'] = plot_to_base64(fig)
     
     counts = {}
     sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
@@ -462,7 +557,8 @@ def generate_visualizations(reviews):
         keywords_list = list(top_keywords.keys())
         counts_list = list(top_keywords.values())
         
-        colors_gradient = plt.cm.RdYlGn_r(np.linspace(0.3, 0.9, len(keywords_list)))
+        # Use dark theme gradient from red to yellow
+        colors_gradient = ['#ef4444', '#f87171', '#fb923c', '#fb7185', '#f59e0b', '#fbbf24', '#fde047', '#facc15', '#fcd34d', '#fde68a', '#fef08a', '#fef3c7'][:len(keywords_list)]
         bars = ax.barh(keywords_list, counts_list, color=colors_gradient, 
                       edgecolor='#14b8a6', linewidth=2, alpha=0.85)
         
@@ -475,7 +571,7 @@ def generate_visualizations(reviews):
         
         for i, (bar, count) in enumerate(zip(bars, counts_list)):
             ax.text(count + 0.2, i, str(count), va='center', fontsize=11, 
-                   fontweight='bold', color='#22c55e')
+                   fontweight='bold', color='#e2e8f0')
         
         plt.tight_layout()
         images['keywords'] = plot_to_base64(fig)
@@ -511,106 +607,181 @@ def generate_visualizations(reviews):
         plt.tight_layout()
         images['rating_boxplot'] = plot_to_base64(fig)
     
-    try:
-        zomato_path = os.path.join(DATASET_FOLDER, "zomato.csv")
-        if os.path.exists(zomato_path):
-            df_zom = pd.read_csv(zomato_path, encoding="utf-8", on_bad_lines="skip")
-            df_zom.columns = df_zom.columns.str.strip()
-            if 'name' in df_zom.columns and 'rate' in df_zom.columns:
-                df_rest = df_zom[df_zom['name'].astype(str).str.contains(restaurant_name, case=False, na=False)]
-                if not df_rest.empty:
-                    if 'online_order' in df_zom.columns:
-                        online_groups = df_rest.groupby('online_order')['rate'].apply(
-                            lambda x: pd.to_numeric(x.astype(str).str.replace('/5', ''), errors='coerce').mean()
-                        ).dropna()
-                        if len(online_groups) > 0:
-                            fig, ax = plt.subplots(figsize=(10, 6))
-                            colors = ['#22c55e' if idx == 'Yes' else '#ef4444' for idx in online_groups.index]
-                            bars = ax.bar(online_groups.index, online_groups.values, 
-                                         color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
-                            ax.set_title("🛒 Online Order Availability vs Avg Rating", 
-                                       fontsize=18, fontweight='bold', pad=25, color='#e2e8f0')
-                            ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
-                            ax.set_ylim(0, 5.5)
-                            ax.grid(axis='y', alpha=0.3, linestyle='--')
-                            ax.set_facecolor('#0f172a')
-                            for bar in bars:
-                                height = bar.get_height()
-                                ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                                       f'{height:.2f}', ha='center', va='bottom', 
-                                       fontsize=12, fontweight='bold', color='#e2e8f0')
-                            plt.tight_layout()
-                            images['online_order_rating'] = plot_to_base64(fig)
+    # Aggregate cost and feature data from ALL CSV files
+    all_cost_rating_data = []
+    all_online_order_data = []
+    all_table_booking_data = []
+    
+    csv_files_for_features = ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv', 'reviews.csv']
+    
+    for csv_file in csv_files_for_features:
+        try:
+            csv_path = os.path.join(DATASET_FOLDER, csv_file)
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
+                df.columns = df.columns.str.strip()
+                
+                # Find restaurant name column
+                name_col = None
+                for col in ['name', 'Restaurant Name', 'business_name', 'restaurant_name']:
+                    if col in df.columns:
+                        name_col = col
+                        break
+                
+                # Find rating column
+                rating_col = None
+                for col in ['rate', 'rating', 'aggregate_rating', 'Rating']:
+                    if col in df.columns:
+                        rating_col = col
+                        break
+                
+                if name_col and rating_col:
+                    df_rest = df[df[name_col].astype(str).str.contains(restaurant_name, case=False, na=False)]
                     
-                    if 'book_table' in df_zom.columns:
-                        table_groups = df_rest.groupby('book_table')['rate'].apply(
-                            lambda x: pd.to_numeric(x.astype(str).str.replace('/5', ''), errors='coerce').mean()
-                        ).dropna()
-                        if len(table_groups) > 0:
-                            fig, ax = plt.subplots(figsize=(10, 6))
-                            colors = ['#22c55e' if idx == 'Yes' else '#ef4444' for idx in table_groups.index]
-                            bars = ax.bar(table_groups.index, table_groups.values, 
-                                         color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
-                            ax.set_title("📅 Table Booking Availability vs Avg Rating", 
-                                       fontsize=18, fontweight='bold', pad=25, color='#e2e8f0')
-                            ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
-                            ax.set_ylim(0, 5.5)
-                            ax.grid(axis='y', alpha=0.3, linestyle='--')
-                            ax.set_facecolor('#0f172a')
-                            for bar in bars:
-                                height = bar.get_height()
-                                ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-                                       f'{height:.2f}', ha='center', va='bottom', 
-                                       fontsize=12, fontweight='bold', color='#e2e8f0')
-                            plt.tight_layout()
-                            images['table_booking_rating'] = plot_to_base64(fig)
-                    
-                    if 'cost' in df_zom.columns and not df_rest.empty:
-                        df_cost = df_rest.copy()
-                        df_cost['cost_num'] = pd.to_numeric(df_cost['cost'].astype(str).str.replace(',', ''), errors='coerce')
-                        df_cost['rate_num'] = pd.to_numeric(df_cost['rate'].astype(str).str.replace('/5', ''), errors='coerce')
-                        df_cost_clean = df_cost[['cost_num', 'rate_num']].dropna()
+                    if not df_rest.empty:
+                        # Collect cost data
+                        cost_col = None
+                        for col in ['cost', 'approx_cost(for two people)', 'Cost', 'price']:
+                            if col in df.columns:
+                                cost_col = col
+                                break
                         
-                        if len(df_cost_clean) > 0:
-                            fig, ax = plt.subplots(figsize=(12, 6))
-                            ax.scatter(df_cost_clean['cost_num'], df_cost_clean['rate_num'], 
-                                      s=100, alpha=0.7, c='#14b8a6', edgecolor='#0ea5e9', linewidth=2)
-                            ax.set_title("💰 Cost vs Rating Analysis", fontsize=20, 
-                                       fontweight='bold', pad=25, color='#e2e8f0')
-                            ax.set_xlabel("Cost for Two", fontsize=14, fontweight='bold', color='#e2e8f0')
-                            ax.set_ylabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
-                            ax.grid(alpha=0.3, linestyle='--')
-                            ax.set_facecolor('#0f172a')
-                            plt.tight_layout()
-                            images['cost_vs_rating'] = plot_to_base64(fig)
-                            
-                            fig, ax = plt.subplots(figsize=(12, 6))
-                            ax.hist(df_cost_clean['cost_num'], bins=10, color='#22c55e', 
-                                   edgecolor='#14b8a6', linewidth=2, alpha=0.8)
-                            ax.set_title("💵 Cost Distribution", fontsize=20, fontweight='bold', 
-                                       pad=25, color='#e2e8f0')
-                            ax.set_xlabel("Cost for Two", fontsize=14, fontweight='bold', color='#e2e8f0')
-                            ax.set_ylabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
-                            ax.axvline(x=df_cost_clean['cost_num'].mean(), color='#f59e0b', 
-                                     linestyle='--', linewidth=2.5, 
-                                     label=f"Avg: ₹{df_cost_clean['cost_num'].mean():.0f}")
-                            ax.legend(fontsize=12)
-                            ax.grid(axis='y', alpha=0.3, linestyle='--')
-                            ax.set_facecolor('#0f172a')
-                            plt.tight_layout()
-                            images['cost_distribution'] = plot_to_base64(fig)
-    except Exception as e:
-        print(f"Error creating cost/online order charts: {e}")
+                        if cost_col:
+                            for _, row in df_rest.iterrows():
+                                cost_val = pd.to_numeric(str(row[cost_col]).replace(',', '').replace('₹', ''), errors='coerce')
+                                rate_val = pd.to_numeric(str(row[rating_col]).replace('/5', ''), errors='coerce')
+                                if pd.notna(cost_val) and pd.notna(rate_val) and cost_val > 0:
+                                    all_cost_rating_data.append({'cost': cost_val, 'rating': rate_val})
+                        
+                        # Collect online order data
+                        if 'online_order' in df.columns:
+                            for _, row in df_rest.iterrows():
+                                online_val = str(row['online_order']).strip()
+                                rate_val = pd.to_numeric(str(row[rating_col]).replace('/5', ''), errors='coerce')
+                                if pd.notna(rate_val) and online_val in ['Yes', 'No']:
+                                    all_online_order_data.append({'online_order': online_val, 'rating': rate_val})
+                        
+                        # Collect table booking data
+                        if 'book_table' in df.columns:
+                            for _, row in df_rest.iterrows():
+                                table_val = str(row['book_table']).strip()
+                                rate_val = pd.to_numeric(str(row[rating_col]).replace('/5', ''), errors='coerce')
+                                if pd.notna(rate_val) and table_val in ['Yes', 'No']:
+                                    all_table_booking_data.append({'book_table': table_val, 'rating': rate_val})
+        except Exception as e:
+            print(f"Error reading features from {csv_file}: {e}")
+    
+    # Create online order visualization
+    if all_online_order_data:
+        try:
+            online_df = pd.DataFrame(all_online_order_data)
+            if not online_df.empty and 'online_order' in online_df.columns:
+                online_groups = online_df.groupby('online_order')['rating'].mean()
+                if len(online_groups) > 0:
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    colors = ['#22c55e' if idx == 'Yes' else '#ef4444' for idx in online_groups.index]
+                    bars = ax.bar(online_groups.index, online_groups.values, 
+                                 color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+                    ax.set_title("🛒 Online Order Availability vs Avg Rating (All Sources)", 
+                               fontsize=18, fontweight='bold', pad=25, color='#e2e8f0')
+                    ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                    ax.set_ylim(0, 5.5)
+                    ax.grid(axis='y', alpha=0.3, linestyle='--')
+                    ax.set_facecolor('#0f172a')
+                    for bar in bars:
+                        height = bar.get_height()
+                        ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                               f'{height:.2f}', ha='center', va='bottom', 
+                               fontsize=12, fontweight='bold', color='#e2e8f0')
+                    plt.tight_layout()
+                    images['online_order_rating'] = plot_to_base64(fig)
+        except Exception as e:
+            print(f"Error creating online order chart: {e}")
+    
+    # Create table booking visualization
+    if all_table_booking_data:
+        try:
+            table_df = pd.DataFrame(all_table_booking_data)
+            if not table_df.empty and 'book_table' in table_df.columns:
+                table_groups = table_df.groupby('book_table')['rating'].mean()
+                if len(table_groups) > 0:
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    colors = ['#22c55e' if idx == 'Yes' else '#ef4444' for idx in table_groups.index]
+                    bars = ax.bar(table_groups.index, table_groups.values, 
+                                 color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+                    ax.set_title("📅 Table Booking Availability vs Avg Rating (All Sources)", 
+                               fontsize=18, fontweight='bold', pad=25, color='#e2e8f0')
+                    ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                    ax.set_ylim(0, 5.5)
+                    ax.grid(axis='y', alpha=0.3, linestyle='--')
+                    ax.set_facecolor('#0f172a')
+                    for bar in bars:
+                        height = bar.get_height()
+                        ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                               f'{height:.2f}', ha='center', va='bottom', 
+                               fontsize=12, fontweight='bold', color='#e2e8f0')
+                    plt.tight_layout()
+                    images['table_booking_rating'] = plot_to_base64(fig)
+        except Exception as e:
+            print(f"Error creating table booking chart: {e}")
+    
+    # Create cost visualizations
+    if all_cost_rating_data:
+        try:
+            cost_df = pd.DataFrame(all_cost_rating_data)
+            if not cost_df.empty:
+                fig, ax = plt.subplots(figsize=(12, 6))
+                ax.scatter(cost_df['cost'], cost_df['rating'], 
+                          s=100, alpha=0.7, c='#14b8a6', edgecolor='#0ea5e9', linewidth=2)
+                ax.set_title("💰 Cost vs Rating Analysis (All Sources)", fontsize=20, 
+                           fontweight='bold', pad=25, color='#e2e8f0')
+                ax.set_xlabel("Cost for Two", fontsize=14, fontweight='bold', color='#e2e8f0')
+                ax.set_ylabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                ax.grid(alpha=0.3, linestyle='--')
+                ax.set_facecolor('#0f172a')
+                plt.tight_layout()
+                images['cost_vs_rating'] = plot_to_base64(fig)
+                
+                fig, ax = plt.subplots(figsize=(12, 6))
+                ax.hist(cost_df['cost'], bins=10, color='#22c55e', 
+                       edgecolor='#14b8a6', linewidth=2, alpha=0.8)
+                ax.set_title("💵 Cost Distribution (All Sources)", fontsize=20, fontweight='bold', 
+                           pad=25, color='#e2e8f0')
+                ax.set_xlabel("Cost for Two", fontsize=14, fontweight='bold', color='#e2e8f0')
+                ax.set_ylabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
+                ax.axvline(x=cost_df['cost'].mean(), color='#f59e0b', 
+                         linestyle='--', linewidth=2.5, 
+                          label=f"Avg: ₹{cost_df['cost'].mean():.0f}")
+                ax.legend(fontsize=12)
+                ax.grid(axis='y', alpha=0.3, linestyle='--')
+                ax.set_facecolor('#0f172a')
+                plt.tight_layout()
+                images['cost_distribution'] = plot_to_base64(fig)
+        except Exception as e:
+            print(f"Error creating cost charts: {e}")
     
     try:
         cuisine_list = []
-        for fname in ['zomato.csv', 'mumbaires.csv']:
+        # Check ALL CSV files for cuisine data
+        for fname in ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv', 'Yelpreviws.csv', 'reviews.csv']:
             fpath = os.path.join(DATASET_FOLDER, fname)
             if os.path.exists(fpath):
                 df = pd.read_csv(fpath, encoding="utf-8", on_bad_lines="skip")
                 df.columns = df.columns.str.strip()
-                cuisine_col = 'cuisines' if 'cuisines' in df.columns else 'Cousines' if 'Cousines' in df.columns else None
-                name_col = 'name' if 'name' in df.columns else 'Restaurant Name' if 'Restaurant Name' in df.columns else None
+                
+                # Try different cuisine column variations
+                cuisine_col = None
+                for col in ['cuisines', 'Cousines', 'cuisine', 'food_type', 'category']:
+                    if col in df.columns:
+                        cuisine_col = col
+                        break
+                
+                # Try different name column variations
+                name_col = None
+                for col in ['name', 'Restaurant Name', 'business_name', 'restaurant_name']:
+                    if col in df.columns:
+                        name_col = col
+                        break
                 
                 if cuisine_col and name_col:
                     df_rest = df[df[name_col].astype(str).str.contains(restaurant_name, case=False, na=False)]
@@ -626,10 +797,11 @@ def generate_visualizations(reviews):
             fig, ax = plt.subplots(figsize=(12, 7))
             cuisines = list(top_cuisines.keys())
             counts = list(top_cuisines.values())
-            colors = plt.cm.viridis(np.linspace(0.3, 0.9, len(cuisines)))
-            bars = ax.barh(cuisines, counts, color=colors, edgecolor='#14b8a6', 
+            # Use dark theme palette colors
+            colors = ['#14b8a6', '#22c55e', '#0ea5e9', '#06b6d4', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#ec4899', '#a855f7'][:len(cuisines)]
+            bars = ax.barh(cuisines, counts, color=colors, edgecolor='#0ea5e9', 
                           linewidth=2, alpha=0.85)
-            ax.set_title("🍽️ Cuisine Type Distribution", fontsize=20, fontweight='bold', 
+            ax.set_title("🍽️ Cuisine Type Distribution (All Sources)", fontsize=20, fontweight='bold', 
                        pad=25, color='#e2e8f0')
             ax.set_xlabel("Frequency", fontsize=14, fontweight='bold', color='#e2e8f0')
             ax.invert_yaxis()
@@ -637,7 +809,7 @@ def generate_visualizations(reviews):
             ax.set_facecolor('#0f172a')
             for i, (bar, count) in enumerate(zip(bars, counts)):
                 ax.text(count + 0.2, i, str(count), va='center', 
-                       fontsize=11, fontweight='bold', color='#22c55e')
+                       fontsize=11, fontweight='bold', color='#e2e8f0')
             plt.tight_layout()
             images['cuisine_distribution'] = plot_to_base64(fig)
     except Exception as e:
@@ -645,7 +817,8 @@ def generate_visualizations(reviews):
     
     try:
         location_branches = []
-        for fname in ['zomato.csv', 'mumbaires.csv']:
+        # Check ALL CSV files for location data
+        for fname in ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv', 'reviews.csv', 'Yelpreviws.csv']:
             fpath = os.path.join(DATASET_FOLDER, fname)
             if os.path.exists(fpath):
                 df = pd.read_csv(fpath, encoding="utf-8", on_bad_lines="skip")
@@ -728,7 +901,9 @@ def generate_visualizations(reviews):
         sorted_cats = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
         cats = [c[0] for c in sorted_cats]
         vals = [c[1] for c in sorted_cats]
-        colors = plt.cm.Reds(np.linspace(0.4, 0.9, len(cats)))
+        # Use dark theme red/orange gradient
+        colors_palette = ['#ef4444', '#f87171', '#fb923c', '#f59e0b', '#fbbf24', '#fb7185', '#fca5a5', '#fdba74']
+        colors = [colors_palette[i % len(colors_palette)] for i in range(len(cats))]
         bars = ax.barh(cats, vals, color=colors, edgecolor='#14b8a6', linewidth=2, alpha=0.85)
         ax.set_title("🔍 Complaint Category Frequency", fontsize=20, fontweight='bold', 
                    pad=25, color='#e2e8f0')
@@ -738,7 +913,7 @@ def generate_visualizations(reviews):
         ax.set_facecolor('#0f172a')
         for i, (bar, val) in enumerate(zip(bars, vals)):
             ax.text(val + 0.5, i, str(val), va='center', fontsize=11, 
-                   fontweight='bold', color='#22c55e')
+                   fontweight='bold', color='#e2e8f0')
         plt.tight_layout()
         images['category_frequency'] = plot_to_base64(fig)
     
@@ -761,69 +936,121 @@ def generate_visualizations(reviews):
             
             if not correlation_matrix.empty:
                 fig, ax = plt.subplots(figsize=(10, 8))
-                sns.heatmap(correlation_matrix, annot=True, fmt='.2f', cmap='RdYlGn', 
+                # Use coolwarm colormap which works better with dark theme
+                sns.heatmap(correlation_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
                            center=0, linewidths=2, linecolor='#0f172a', 
-                           cbar_kws={'label': 'Correlation'}, ax=ax)
+                           cbar_kws={'label': 'Correlation'}, ax=ax,
+                           annot_kws={'color': '#e2e8f0', 'fontweight': 'bold'})
                 ax.set_title("🔗 Feature Correlation Heatmap", fontsize=20, 
                            fontweight='bold', pad=25, color='#e2e8f0')
+                # Set tick labels color
+                ax.set_xticklabels(ax.get_xticklabels(), color='#e2e8f0')
+                ax.set_yticklabels(ax.get_yticklabels(), color='#e2e8f0')
                 ax.set_facecolor('#0f172a')
+                fig.patch.set_facecolor('#0f172a')
                 plt.tight_layout()
                 images['correlation_heatmap'] = plot_to_base64(fig)
     except Exception as e:
         print(f"Error creating correlation heatmap: {e}")
     
-    try:
-        zomato2_path = os.path.join(DATASET_FOLDER, "zomato2.csv")
-        if os.path.exists(zomato2_path):
-            df_zomato2 = pd.read_csv(zomato2_path, encoding="utf-8", on_bad_lines="skip")
-            df_zomato2.columns = df_zomato2.columns.str.strip()
-            
-            if 'Restaurant_Name' in df_zomato2.columns:
-                df_items = df_zomato2[df_zomato2['Restaurant_Name'].astype(str).str.contains(
-                    restaurant_name, case=False, na=False, regex=False
-                )]
+    # Aggregate top rated items from ALL CSV files
+    all_rated_items = []
+    for csv_file in ['zomato2.csv', 'zomato.csv', 'mumbaires.csv']:
+        try:
+            csv_path = os.path.join(DATASET_FOLDER, csv_file)
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
+                df.columns = df.columns.str.strip()
                 
-                if not df_items.empty and 'Item_Name' in df_items.columns and 'Average_Rating' in df_items.columns:
-                    top_rated = df_items.nlargest(5, 'Average_Rating')[['Item_Name', 'Average_Rating']].copy()
+                # Find restaurant name column
+                name_col = None
+                for col in ['Restaurant_Name', 'name', 'Restaurant Name', 'restaurant_name']:
+                    if col in df.columns:
+                        name_col = col
+                        break
+                
+                if name_col:
+                    df_items = df[df[name_col].astype(str).str.contains(
+                        restaurant_name, case=False, na=False, regex=False
+                    )]
                     
-                    if not top_rated.empty:
-                        fig, ax = plt.subplots(figsize=(12, 6))
-                        items = [str(item)[:30] for item in top_rated['Item_Name']]
-                        ratings = top_rated['Average_Rating'].fillna(0)
-                        colors = plt.cm.YlOrRd(np.linspace(0.5, 0.9, len(items)))
-                        bars = ax.barh(items, ratings, color=colors, edgecolor='#14b8a6', 
-                                      linewidth=2, alpha=0.85)
-                        ax.set_title("⭐ Top 5 Highest Rated Menu Items", fontsize=20, 
-                                   fontweight='bold', pad=25, color='#e2e8f0')
-                        ax.set_xlabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
-                        ax.invert_yaxis()
-                        ax.set_xlim(0, 5.5)
-                        ax.grid(axis='x', alpha=0.3, linestyle='--')
-                        ax.set_facecolor('#0f172a')
-                        for i, (bar, rating) in enumerate(zip(bars, ratings)):
-                            ax.text(rating + 0.1, i, f'{rating:.1f}', va='center', 
-                                   fontsize=11, fontweight='bold', color='#fbbf24')
-                        plt.tight_layout()
-                        images['top_rated_items'] = plot_to_base64(fig)
-                    
-                    if 'Best_Seller' in df_items.columns:
-                        bestseller_count = (df_items['Best_Seller'] == 'BESTSELLER').sum()
-                        total_items = len(df_items)
+                    if not df_items.empty:
+                        # Find item and rating columns
+                        item_col = None
+                        for col in ['Item_Name', 'dish_name', 'menu_item', 'item', 'dish']:
+                            if col in df_items.columns:
+                                item_col = col
+                                break
                         
-                        fig, ax = plt.subplots(figsize=(8, 8))
-                        sizes = [bestseller_count, total_items - bestseller_count]
-                        labels = [f'Best Sellers\n({bestseller_count})', 
-                                 f'Regular Items\n({total_items - bestseller_count})']
-                        colors = ['#fbbf24', '#64748b']
-                        explode = (0.1, 0)
-                        ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', 
-                              startangle=90, explode=explode, textprops={'fontsize': 12, 'color': '#e2e8f0'})
-                        ax.set_title("🏆 Best Seller Distribution", fontsize=20, 
-                                   fontweight='bold', pad=25, color='#e2e8f0')
-                        plt.tight_layout()
-                        images['bestseller_distribution'] = plot_to_base64(fig)
-    except Exception as e:
-        print(f"Error creating extended menu charts: {e}")
+                        rating_col = None
+                        for col in ['Average_Rating', 'rating', 'item_rating', 'rate']:
+                            if col in df_items.columns:
+                                rating_col = col
+                                break
+                        
+                        bestseller_col = None
+                        for col in ['Best_Seller', 'bestseller', 'popular', 'best_seller']:
+                            if col in df_items.columns:
+                                bestseller_col = col
+                                break
+                        
+                        if item_col and rating_col:
+                            for _, row in df_items.iterrows():
+                                rating_val = pd.to_numeric(row[rating_col], errors='coerce')
+                                if pd.notna(rating_val) and rating_val > 0:
+                                    all_rated_items.append({
+                                        'name': str(row[item_col]),
+                                        'rating': rating_val,
+                                        'bestseller': str(row[bestseller_col]) if bestseller_col and pd.notna(row[bestseller_col]) else 'No'
+                                    })
+        except Exception as e:
+            print(f"Error reading rated items from {csv_file}: {e}")
+    
+    if all_rated_items:
+        items_df = pd.DataFrame(all_rated_items)
+        if not items_df.empty:
+            # Top rated items chart
+            top_rated = items_df.nlargest(5, 'rating')
+            if not top_rated.empty:
+                fig, ax = plt.subplots(figsize=(12, 6))
+                items = [str(item)[:30] for item in top_rated['name']]
+                ratings = top_rated['rating']
+                # Use dark theme yellow/orange gradient
+                colors = ['#fbbf24', '#f59e0b', '#fb923c', '#f97316', '#ea580c'][:len(items)]
+                bars = ax.barh(items, ratings, color=colors, edgecolor='#14b8a6', 
+                              linewidth=2, alpha=0.85)
+                ax.set_title("⭐ Top 5 Highest Rated Menu Items (All Sources)", fontsize=20, 
+                           fontweight='bold', pad=25, color='#e2e8f0')
+                ax.set_xlabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+                ax.invert_yaxis()
+                ax.set_xlim(0, 5.5)
+                ax.grid(axis='x', alpha=0.3, linestyle='--')
+                ax.set_facecolor('#0f172a')
+                for i, (bar, rating) in enumerate(zip(bars, ratings)):
+                    ax.text(rating + 0.1, i, f'{rating:.1f}', va='center', 
+                           fontsize=11, fontweight='bold', color='#e2e8f0')
+                plt.tight_layout()
+                images['top_rated_items'] = plot_to_base64(fig)
+            
+            # Bestseller pie chart
+            bestseller_count = sum(1 for item in all_rated_items 
+                                  if str(item['bestseller']).upper() in ['BESTSELLER', 'YES'])
+            total_items = len(all_rated_items)
+            
+            if total_items > 0 and bestseller_count > 0:
+                fig, ax = plt.subplots(figsize=(8, 8))
+                sizes = [bestseller_count, total_items - bestseller_count]
+                labels = [f'Best Sellers\n({bestseller_count})', 
+                         f'Regular Items\n({total_items - bestseller_count})']
+                colors = ['#fbbf24', '#64748b']
+                explode = (0.1, 0)
+                ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', 
+                      startangle=90, explode=explode, textprops={'fontsize': 12, 'color': '#e2e8f0', 'fontweight': 'bold'})
+                ax.set_title("🏆 Best Seller Distribution (All Sources)", fontsize=20, 
+                           fontweight='bold', pad=25, color='#e2e8f0')
+                fig.patch.set_facecolor('#0f172a')
+                plt.tight_layout()
+                images['bestseller_distribution'] = plot_to_base64(fig)
     
     return images
 

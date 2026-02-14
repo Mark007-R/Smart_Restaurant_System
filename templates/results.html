@@ -575,41 +575,6 @@
         <p class="mb-0">AI-Powered comprehensive review analysis and insights</p>
     </div>
 
-    
-    <div class="stats-grid">
-        <div class="stat-card total">
-            <div class="stat-icon">
-                <i class="fas fa-comments"></i>
-            </div>
-            <h3>{{ total_reviews }}</h3>
-            <p>Total Reviews</p>
-        </div>
-
-        <div class="stat-card positive">
-            <div class="stat-icon">
-                <i class="fas fa-smile"></i>
-            </div>
-            <h3>{{ sentiment_percentages.Positive }}%</h3>
-            <p>Positive</p>
-        </div>
-
-        <div class="stat-card negative">
-            <div class="stat-icon">
-                <i class="fas fa-frown"></i>
-            </div>
-            <h3>{{ sentiment_percentages.Negative }}%</h3>
-            <p>Negative</p>
-        </div>
-
-        <div class="stat-card neutral">
-            <div class="stat-icon">
-                <i class="fas fa-meh"></i>
-            </div>
-            <h3>{{ sentiment_percentages.Neutral }}%</h3>
-            <p>Neutral</p>
-        </div>
-    </div>
-
     {% if visualizations.kpi_metrics %}
     <div class="category-section">
         <h4>
@@ -617,6 +582,14 @@
             Key Performance Indicators
         </h4>
         <div class="stats-grid" style="margin-top: 2rem;">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h3>{{ visualizations.kpi_metrics.total_reviews }}</h3>
+                <p>Total Reviews</p>
+            </div>
+            
             <div class="stat-card total">
                 <div class="stat-icon">
                     <i class="fas fa-star"></i>
@@ -641,14 +614,7 @@
                 <p>Negative Reviews</p>
             </div>
             
-            <div class="stat-card neutral">
-                <div class="stat-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <h3>{{ visualizations.kpi_metrics.avg_sentiment_score }}</h3>
-                <p>Sentiment Score</p>
-            </div>
-            
+            {% if visualizations.kpi_metrics.avg_cost and visualizations.kpi_metrics.avg_cost != 'N/A' %}
             <div class="stat-card total">
                 <div class="stat-icon">
                     <i class="fas fa-rupee-sign"></i>
@@ -656,7 +622,9 @@
                 <h3>{{ visualizations.kpi_metrics.avg_cost }}</h3>
                 <p>Avg Cost for Two</p>
             </div>
+            {% endif %}
             
+            {% if visualizations.kpi_metrics.online_order and visualizations.kpi_metrics.online_order != 'N/A' %}
             <div class="stat-card {{ 'positive' if visualizations.kpi_metrics.online_order == 'Yes' else 'neutral' }}">
                 <div class="stat-icon">
                     <i class="fas fa-shopping-cart"></i>
@@ -664,7 +632,9 @@
                 <h3>{{ visualizations.kpi_metrics.online_order }}</h3>
                 <p>Online Order</p>
             </div>
+            {% endif %}
             
+            {% if visualizations.kpi_metrics.table_booking and visualizations.kpi_metrics.table_booking != 'N/A' %}
             <div class="stat-card {{ 'positive' if visualizations.kpi_metrics.table_booking == 'Yes' else 'neutral' }}">
                 <div class="stat-icon">
                     <i class="fas fa-calendar-check"></i>
@@ -672,20 +642,19 @@
                 <h3>{{ visualizations.kpi_metrics.table_booking }}</h3>
                 <p>Table Booking</p>
             </div>
+            {% endif %}
             
+            {% if visualizations.kpi_metrics.cuisines and visualizations.kpi_metrics.cuisines != 'N/A' %}
             <div class="stat-card total">
                 <div class="stat-icon">
                     <i class="fas fa-utensils"></i>
                 </div>
                 <h3 style="font-size: 1.2rem;">
-                    {% if visualizations.kpi_metrics.cuisines and visualizations.kpi_metrics.cuisines != 'N/A' %}
-                        {{ visualizations.kpi_metrics.cuisines[:20] }}{{ '...' if visualizations.kpi_metrics.cuisines|length > 20 else '' }}
-                    {% else %}
-                        N/A
-                    {% endif %}
+                    {{ visualizations.kpi_metrics.cuisines[:20] }}{{ '...' if visualizations.kpi_metrics.cuisines|length > 20 else '' }}
                 </h3>
                 <p>Cuisine Type</p>
             </div>
+            {% endif %}
         </div>
         
         {% if visualizations.kpi_metrics.address != 'N/A' %}
