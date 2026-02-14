@@ -182,27 +182,31 @@ def get_restaurant_info(restaurant_name):
 
 def generate_visualizations(reviews):
     """
-    Generate comprehensive visualizations with better styling and spacing
+    Generate meaningful visualizations focused on actionable restaurant insights
     Returns dict with image keys and metadata
     """
     images = {}
     
-    # Set professional style
-    plt.style.use('seaborn-v0_8-darkgrid')
-    sns.set_palette("husl")
+    # Set professional style with dark theme
+    plt.style.use('dark_background')
     
     counts = {}
     sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
     sentiment_scores = []
-    source_distribution = {}
     rating_distribution = []
+    category_sentiment_map = {}  # For detailed complaint analysis
     
     # Collect data
     for r in reviews:
-        # Categories
-        for cat in (r.categories or "").split(","):
-            if cat.strip():
-                counts[cat.strip()] = counts.get(cat.strip(), 0) + 1
+        # Categories with sentiment mapping
+        cats = [c.strip() for c in (r.categories or "").split(",") if c.strip()]
+        sent = r.sentiment if hasattr(r, "sentiment") and r.sentiment else "Neutral"
+        
+        for cat in cats:
+            if cat not in category_sentiment_map:
+                category_sentiment_map[cat] = {"Positive": 0, "Negative": 0, "Neutral": 0}
+            category_sentiment_map[cat][sent] += 1
+            counts[cat] = counts.get(cat, 0) + 1
         
         # Sentiments
         if hasattr(r, "sentiment") and r.sentiment:
@@ -211,11 +215,6 @@ def generate_visualizations(reviews):
         # Sentiment scores
         if hasattr(r, "score") and r.score is not None:
             sentiment_scores.append(r.score)
-        
-        # Source distribution
-        if hasattr(r, "source_file") and r.source_file:
-            source = r.source_file
-            source_distribution[source] = source_distribution.get(source, 0) + 1
         
         # Ratings
         if hasattr(r, "rating") and r.rating is not None:
@@ -230,54 +229,47 @@ def generate_visualizations(reviews):
         restaurant_info = get_restaurant_info(restaurant_name)
         images['restaurant_info'] = restaurant_info
     
-    # 1. Sentiment Overview Card (Combined Pie + Bar)
-    if any(sentiments.values()):
-        fig = plt.figure(figsize=(16, 7))
-        gs = fig.add_gridspec(1, 2, hspace=0.3, wspace=0.3)
+    # 1. KEY INSIGHT: Problem Areas (Issues by Impact) - Negative sentiment focused
+    if counts:
+        # Create problem severity based on negative mention frequency
+        problem_severity = {}
+        for cat, sentiments_dict in category_sentiment_map.items():
+            negative_count = sentiments_dict.get("Negative", 0)
+            total_count = sum(sentiments_dict.values())
+            problem_severity[cat] = {
+                'negative_count': negative_count,
+                'total_count': total_count,
+                'neg_percentage': (negative_count / total_count * 100) if total_count > 0 else 0
+            }
         
-        # Pie chart
-        ax1 = fig.add_subplot(gs[0, 0])
-        colors = ['#2ecc71', '#e74c3c', '#95a5a6']
-        explode = (0.08, 0.08, 0.08)
+        # Sort by negative percentage
+        sorted_problems = sorted(problem_severity.items(), 
+                                key=lambda x: x[1]['neg_percentage'], reverse=True)
         
-        wedges, texts, autotexts = ax1.pie(
-            sentiments.values(), 
-            labels=sentiments.keys(), 
-            autopct='%1.1f%%',
-            startangle=90, 
-            colors=colors,
-            explode=explode,
-            shadow=True,
-            textprops={'fontsize': 13, 'weight': 'bold'}
-        )
+        fig, ax = plt.subplots(figsize=(14, 7))
+        categories = [cat for cat, _ in sorted_problems]
+        neg_percentages = [data['neg_percentage'] for _, data in sorted_problems]
+        colors_severity = ['#ef4444' if p > 50 else '#f97316' if p > 30 else '#fbbf24' 
+                          for p in neg_percentages]
         
-        for autotext in autotexts:
-            autotext.set_color('white')
-            autotext.set_fontsize(13)
-            autotext.set_fontweight('bold')
+        bars = ax.barh(categories, neg_percentages, color=colors_severity, 
+                       edgecolor='#14b8a6', linewidth=2, alpha=0.85)
         
-        ax1.set_title("Sentiment Distribution", fontsize=18, fontweight='bold', pad=25)
+        ax.set_title("🚨 Problem Areas: Negative Sentiment by Issue", 
+                    fontsize=20, fontweight='bold', pad=25, color='#e2e8f0')
+        ax.set_xlabel("% of Issues with Negative Reviews", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_ylabel("Issue Category", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.invert_yaxis()
+        ax.grid(axis='x', alpha=0.3, linestyle='--')
+        ax.set_facecolor('#0f172a')
         
-        # Bar chart
-        ax2 = fig.add_subplot(gs[0, 1])
-        df_sent = pd.DataFrame(list(sentiments.items()), columns=["Sentiment", "Count"])
-        bars = ax2.bar(df_sent["Sentiment"], df_sent["Count"], 
-                       color=colors, edgecolor='black', linewidth=1.5, alpha=0.85)
-        
-        ax2.set_title("Review Count by Sentiment", fontsize=18, fontweight='bold', pad=25)
-        ax2.set_xlabel("Sentiment", fontsize=14, fontweight='bold')
-        ax2.set_ylabel("Count", fontsize=14, fontweight='bold')
-        ax2.grid(axis='y', alpha=0.4, linestyle='--')
-        
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{int(height)}',
-                    ha='center', va='bottom', fontsize=13, fontweight='bold')
+        # Add percentage labels
+        for i, (bar, p) in enumerate(zip(bars, neg_percentages)):
+            ax.text(p + 1.5, i, f'{p:.1f}%', va='center', 
+                   fontsize=11, fontweight='bold', color='#22c55e')
         
         plt.tight_layout()
-        images['sentiment_overview'] = plot_to_base64(fig)
+        images['problem_areas'] = plot_to_base64(fig)
     
     # 2. Complaint Category Analysis
     if counts:

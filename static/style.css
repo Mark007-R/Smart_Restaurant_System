@@ -195,6 +195,40 @@ body.theme-dark .form-control::placeholder {
     color: var(--text-muted) !important;
 }
 
+body.theme-dark input[type="file"]::file-selector-button {
+    background: var(--gradient-primary);
+    color: #0b1220;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.55rem 1.1rem;
+    margin-right: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.theme-dark input[type="file"]::file-selector-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(20, 184, 166, 0.35);
+}
+
+body.theme-dark input[type="file"]::-webkit-file-upload-button {
+    background: var(--gradient-primary);
+    color: #0b1220;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.55rem 1.1rem;
+    margin-right: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.theme-dark input[type="file"]::-webkit-file-upload-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(20, 184, 166, 0.35);
+}
+
 body.theme-dark .table {
     color: var(--dark-color) !important;
 }
