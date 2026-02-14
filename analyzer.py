@@ -94,6 +94,14 @@ def get_restaurant_info(restaurant_name):
             "address_col": "Address",
             "price_col": "Price Level"
         },
+        "Resreviews.csv": {
+            "name_col": "Restaurant",
+            "rating_col": "Rating"
+        },
+        "reviews.csv": {
+            "name_col": "business_name",
+            "rating_col": "rating"
+        },
         "zomato.csv": {
             "name_col": "name",
             "rating_col": "rate",
@@ -173,10 +181,112 @@ def generate_visualizations(reviews):
     images = {}
     plt.style.use('dark_background')
     
+    if not reviews:
+        return images
+    
+    restaurant_name = reviews[0].restaurant
+    restaurant_info = get_restaurant_info(restaurant_name)
+    images['restaurant_info'] = restaurant_info
+    
+    ratings_by_category = {}
+    avg_ratings = []
+    
+    try:
+        reviews_csv_path = os.path.join(DATASET_FOLDER, "reviews.csv")
+        if os.path.exists(reviews_csv_path):
+            df_reviews = pd.read_csv(reviews_csv_path, encoding="utf-8", on_bad_lines="skip")
+            df_reviews.columns = df_reviews.columns.str.strip()
+            
+            if 'business_name' in df_reviews.columns and 'rating_category' in df_reviews.columns and 'rating' in df_reviews.columns:
+                df_rest = df_reviews[df_reviews['business_name'].astype(str).str.contains(
+                    restaurant_name, case=False, na=False, regex=False
+                )]
+                
+                if not df_rest.empty:
+                    for cat in df_rest['rating_category'].unique():
+                        if pd.notna(cat):
+                            cat_data = df_rest[df_rest['rating_category'] == cat]['rating']
+                            ratings_by_category[cat] = list(cat_data.dropna())
+                    
+                    avg_ratings = df_rest['rating'].dropna().tolist()
+    except Exception as e:
+        print(f"Error reading reviews.csv: {e}")
+    
+    fig, ax = plt.subplots(figsize=(14, 7))
+    categories = [c.replace('_', ' ').title() for c in ratings_by_category.keys()]
+    avg_scores = [np.mean(ratings_by_category[c]) if ratings_by_category[c] else 0 
+                  for c in ratings_by_category.keys()]
+    colors_cat = ['#22c55e' if s >= 4 else '#f59e0b' if s >= 3 else '#ef4444' for s in avg_scores]
+    
+    bars = ax.bar(categories, avg_scores, color=colors_cat, edgecolor='#14b8a6', 
+                  linewidth=2, alpha=0.85, width=0.7)
+    
+    ax.set_title("⭐ Ratings by Category", fontsize=20, fontweight='bold', 
+                pad=25, color='#e2e8f0')
+    ax.set_ylabel("Average Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
+    ax.set_ylim(0, 5.5)
+    ax.axhline(y=4, color='#22c55e', linestyle='--', linewidth=1.5, alpha=0.5, label='Good (4.0)')
+    ax.axhline(y=3, color='#f59e0b', linestyle='--', linewidth=1.5, alpha=0.5, label='Average (3.0)')
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.set_facecolor('#0f172a')
+    ax.legend(fontsize=10)
+    plt.xticks(rotation=45, ha='right')
+    
+    for bar, score in zip(bars, avg_scores):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height + 0.15,
+               f'{score:.2f}', ha='center', va='bottom', fontsize=12, 
+               fontweight='bold', color='#e2e8f0')
+    
+    plt.tight_layout()
+    images['ratings_by_category'] = plot_to_base64(fig)
+    
+    try:
+        zomato2_path = os.path.join(DATASET_FOLDER, "zomato2.csv")
+        if os.path.exists(zomato2_path):
+            df_zomato2 = pd.read_csv(zomato2_path, encoding="utf-8", on_bad_lines="skip")
+            df_zomato2.columns = df_zomato2.columns.str.strip()
+            
+            if 'Restaurant_Name' in df_zomato2.columns:
+                df_items = df_zomato2[df_zomato2['Restaurant_Name'].astype(str).str.contains(
+                    restaurant_name, case=False, na=False, regex=False
+                )]
+                
+                if not df_items.empty and 'Item_Name' in df_items.columns and 'Average_Rating' in df_items.columns and 'Votes' in df_items.columns:
+                    top_items = df_items.nlargest(8, 'Votes')[['Item_Name', 'Average_Rating', 'Votes', 'Best_Seller']].copy()
+                    
+                    if not top_items.empty:
+                        fig, ax = plt.subplots(figsize=(14, 7))
+                        items = [str(item)[:30] for item in top_items['Item_Name']]
+                        ratings = top_items['Average_Rating'].fillna(0)
+                        votes = top_items['Votes'].fillna(0)
+                        colors_items = ['#fbbf24' if bs == 'BESTSELLER' else '#14b8a6' 
+                                       for bs in top_items['Best_Seller']]
+                        
+                        bars = ax.bar(items, votes, color=colors_items, edgecolor='#0ea5e9', 
+                                     linewidth=2, alpha=0.85)
+                        
+                        ax.set_title("🏆 Top Menu Items by Popularity", fontsize=20, fontweight='bold', 
+                                    pad=25, color='#e2e8f0')
+                        ax.set_ylabel("Number of Votes", fontsize=14, fontweight='bold', color='#e2e8f0')
+                        ax.set_facecolor('#0f172a')
+                        ax.grid(axis='y', alpha=0.3, linestyle='--')
+                        plt.xticks(rotation=45, ha='right', fontsize=10)
+                        
+                        for i, (bar, rating) in enumerate(zip(bars, ratings)):
+                            height = bar.get_height()
+                            ax.text(bar.get_x() + bar.get_width()/2., height + max(votes)*0.02,
+                                   f'★{rating:.1f}', ha='center', va='bottom', fontsize=10, 
+                                   fontweight='bold', color='#fbbf24')
+                        
+                        plt.tight_layout()
+                        images['top_items'] = plot_to_base64(fig)
+    except Exception as e:
+        print(f"Error reading zomato2.csv: {e}")
+    
     counts = {}
     sentiments = {"Positive": 0, "Negative": 0, "Neutral": 0}
     sentiment_scores = []
-    rating_distribution = []
     category_sentiment_map = {}
     
     for r in reviews:
@@ -194,61 +304,9 @@ def generate_visualizations(reviews):
         
         if hasattr(r, "score") and r.score is not None:
             sentiment_scores.append(r.score)
-        
-        if hasattr(r, "rating") and r.rating is not None:
-            try:
-                rating_distribution.append(float(r.rating))
-            except:
-                pass
-    
-    if reviews:
-        restaurant_name = reviews[0].restaurant
-        restaurant_info = get_restaurant_info(restaurant_name)
-        images['restaurant_info'] = restaurant_info
-    
-    if counts:
-        problem_severity = {}
-        for cat, sentiments_dict in category_sentiment_map.items():
-            negative_count = sentiments_dict.get("Negative", 0)
-            total_count = sum(sentiments_dict.values())
-            problem_severity[cat] = {
-                'negative_count': negative_count,
-                'total_count': total_count,
-                'neg_percentage': (negative_count / total_count * 100) if total_count > 0 else 0
-            }
-        
-        sorted_problems = sorted(problem_severity.items(), 
-                                key=lambda x: x[1]['neg_percentage'], reverse=True)
-        
-        fig, ax = plt.subplots(figsize=(14, 7))
-        categories = [cat for cat, _ in sorted_problems]
-        neg_percentages = [data['neg_percentage'] for _, data in sorted_problems]
-        colors_severity = ['#ef4444' if p > 50 else '#f97316' if p > 30 else '#fbbf24' 
-                          for p in neg_percentages]
-        
-        bars = ax.barh(categories, neg_percentages, color=colors_severity, 
-                       edgecolor='#14b8a6', linewidth=2, alpha=0.85)
-        
-        ax.set_title("🚨 Problem Areas: Negative Sentiment by Issue", 
-                    fontsize=20, fontweight='bold', pad=25, color='#e2e8f0')
-        ax.set_xlabel("% of Issues with Negative Reviews", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.set_ylabel("Issue Category", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.invert_yaxis()
-        ax.grid(axis='x', alpha=0.3, linestyle='--')
-        ax.set_facecolor('#0f172a')
-        
-        for i, (bar, p) in enumerate(zip(bars, neg_percentages)):
-            ax.text(p + 1.5, i, f'{p:.1f}%', va='center', 
-                   fontsize=11, fontweight='bold', color='#22c55e')
-        
-        plt.tight_layout()
-        images['problem_areas'] = plot_to_base64(fig)
     
     if any(sentiments.values()):
         total = sum(sentiments.values())
-        pos_pct = (sentiments.get("Positive", 0) / total * 100) if total > 0 else 0
-        neg_pct = (sentiments.get("Negative", 0) / total * 100) if total > 0 else 0
-        
         fig, ax = plt.subplots(figsize=(12, 6))
         
         categories = ['Positive', 'Negative', 'Neutral']
@@ -258,7 +316,7 @@ def generate_visualizations(reviews):
         bars = ax.bar(categories, values, color=colors_sent, edgecolor='#14b8a6', 
                      linewidth=2.5, alpha=0.8, width=0.6)
         
-        ax.set_title("💯 Overall Sentiment Health Score", fontsize=20, fontweight='bold', 
+        ax.set_title("💯 Sentiment Analysis", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
         ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold', color='#e2e8f0')
         ax.set_facecolor('#0f172a')
@@ -272,40 +330,48 @@ def generate_visualizations(reviews):
                    color='#e2e8f0')
         
         plt.tight_layout()
-        images['sentiment_gauge'] = plot_to_base64(fig)
+        images['sentiment'] = plot_to_base64(fig)
     
     if category_sentiment_map:
-        fig, ax = plt.subplots(figsize=(14, 8))
+        problem_severity = {}
+        for cat, sentiments_dict in category_sentiment_map.items():
+            negative_count = sentiments_dict.get("Negative", 0)
+            total_count = sum(sentiments_dict.values())
+            problem_severity[cat] = {
+                'negative_count': negative_count,
+                'total_count': total_count,
+                'neg_percentage': (negative_count / total_count * 100) if total_count > 0 else 0
+            }
         
-        category_names = list(category_sentiment_map.keys())
-        pos_counts = [category_sentiment_map[cat].get("Positive", 0) for cat in category_names]
-        neg_counts = [category_sentiment_map[cat].get("Negative", 0) for cat in category_names]
-        neu_counts = [category_sentiment_map[cat].get("Neutral", 0) for cat in category_names]
+        sorted_problems = sorted(problem_severity.items(), 
+                                key=lambda x: x[1]['neg_percentage'], reverse=True)
         
-        x = range(len(category_names))
-        width = 0.6
-        
-        ax.bar(x, pos_counts, width, label='Positive', color='#22c55e', edgecolor='#14b8a6', linewidth=1.5, alpha=0.8)
-        ax.bar(x, neg_counts, width, bottom=pos_counts, label='Negative', color='#ef4444', edgecolor='#14b8a6', linewidth=1.5, alpha=0.8)
-        ax.bar(x, neu_counts, width, bottom=[p+n for p,n in zip(pos_counts, neg_counts)], 
-               label='Neutral', color='#64748b', edgecolor='#14b8a6', linewidth=1.5, alpha=0.8)
-        
-        ax.set_title("📊 Issue Breakdown: Sentiment per Category", fontsize=20, fontweight='bold', 
-                    pad=25, color='#e2e8f0')
-        ax.set_ylabel("Number of Mentions", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.set_xlabel("Issue Type", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.set_xticks(x)
-        ax.set_xticklabels(category_names, rotation=45, ha='right', fontsize=11)
-        ax.legend(fontsize=12, loc='upper right', framealpha=0.95)
-        ax.grid(axis='y', alpha=0.3, linestyle='--')
-        ax.set_facecolor('#0f172a')
-        
-        plt.tight_layout()
-        images['issue_breakdown'] = plot_to_base64(fig)
+        if sorted_problems:
+            fig, ax = plt.subplots(figsize=(14, 7))
+            categories = [cat for cat, _ in sorted_problems[:10]]
+            neg_percentages = [data['neg_percentage'] for _, data in sorted_problems[:10]]
+            colors_severity = ['#ef4444' if p > 50 else '#f97316' if p > 30 else '#fbbf24' 
+                              for p in neg_percentages]
+            
+            bars = ax.barh(categories, neg_percentages, color=colors_severity, 
+                           edgecolor='#14b8a6', linewidth=2, alpha=0.85)
+            
+            ax.set_title("🚨 Problem Areas by Negative Sentiment", 
+                        fontsize=20, fontweight='bold', pad=25, color='#e2e8f0')
+            ax.set_xlabel("% Negative Mentions", fontsize=14, fontweight='bold', color='#e2e8f0')
+            ax.invert_yaxis()
+            ax.grid(axis='x', alpha=0.3, linestyle='--')
+            ax.set_facecolor('#0f172a')
+            
+            for i, (bar, p) in enumerate(zip(bars, neg_percentages)):
+                ax.text(p + 1.5, i, f'{p:.1f}%', va='center', 
+                       fontsize=11, fontweight='bold', color='#22c55e')
+            
+            plt.tight_layout()
+            images['problem_areas'] = plot_to_base64(fig)
     
     if sentiment_scores:
         fig, ax = plt.subplots(figsize=(13, 6))
-        
         sorted_scores = sorted(sentiment_scores)
         window = max(3, len(sorted_scores) // 10)
         moving_avg = pd.Series(sorted_scores).rolling(window=window, center=True).mean()
@@ -314,16 +380,16 @@ def generate_visualizations(reviews):
                   color='#14b8a6', edgecolor='#0ea5e9', linewidth=0.8, label='Individual Reviews')
         ax.plot(range(len(sorted_scores)), moving_avg, color='#f59e0b', linewidth=3, 
                label=f'Trend (MA-{window})', alpha=0.9)
-        ax.axhline(y=0, color='#64748b', linestyle='--', linewidth=2, alpha=0.6, label='Neutral Threshold')
+        ax.axhline(y=0, color='#64748b', linestyle='--', linewidth=2, alpha=0.6, label='Neutral')
         
         ax.fill_between(range(len(sorted_scores)), 0, sorted_scores, 
-                       where=(sorted_scores >= 0), alpha=0.2, color='#22c55e', label='Positive Zone')
+                       where=(sorted_scores >= 0), alpha=0.2, color='#22c55e')
         ax.fill_between(range(len(sorted_scores)), 0, sorted_scores, 
-                       where=(sorted_scores < 0), alpha=0.2, color='#ef4444', label='Negative Zone')
+                       where=(sorted_scores < 0), alpha=0.2, color='#ef4444')
         
-        ax.set_title("📈 Sentiment Trend Analysis", fontsize=20, fontweight='bold', 
+        ax.set_title("📈 Sentiment Trend in Reviews", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
-        ax.set_xlabel("Review Index (Chronological)", fontsize=14, fontweight='bold', color='#e2e8f0')
+        ax.set_xlabel("Review Index", fontsize=14, fontweight='bold', color='#e2e8f0')
         ax.set_ylabel("Sentiment Score", fontsize=14, fontweight='bold', color='#e2e8f0')
         ax.legend(fontsize=11, loc='best', framealpha=0.95)
         ax.grid(alpha=0.3, linestyle='--')
@@ -331,38 +397,6 @@ def generate_visualizations(reviews):
         
         plt.tight_layout()
         images['sentiment_trend'] = plot_to_base64(fig)
-    
-    if rating_distribution:
-        fig, ax = plt.subplots(figsize=(12, 6))
-        
-        bins = [0, 1, 2, 3, 4, 5, 6]
-        n, bins_edges, patches = ax.hist(rating_distribution, bins=bins, 
-                                         color='#14b8a6', edgecolor='#0ea5e9', 
-                                         linewidth=2, alpha=0.8)
-        
-        colors_rating = ['#ef4444', '#f97316', '#fbbf24', '#a3e635', '#22c55e']
-        for patch, color in zip(patches, colors_rating):
-            patch.set_facecolor(color)
-        
-        mean_rating = sum(rating_distribution) / len(rating_distribution)
-        ax.axvline(x=mean_rating, color='#f59e0b', linestyle='--', linewidth=3, 
-                  label=f'Average: {mean_rating:.2f}', alpha=0.9)
-        
-        ax.set_title("⭐ Customer Rating Distribution", fontsize=20, fontweight='bold', 
-                    pad=25, color='#e2e8f0')
-        ax.set_xlabel("Rating (1-5 scale)", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.set_ylabel("Number of Customers", fontsize=14, fontweight='bold', color='#e2e8f0')
-        ax.legend(fontsize=12, loc='upper right', framealpha=0.95)
-        ax.grid(axis='y', alpha=0.3, linestyle='--')
-        ax.set_facecolor('#0f172a')
-        
-        for height, left in zip(n, bins_edges[:-1]):
-            if height > 0:
-                ax.text(left + 0.5, height + max(n)*0.01, f'{int(height)}', 
-                       ha='center', va='bottom', fontsize=10, fontweight='bold', color='#e2e8f0')
-        
-        plt.tight_layout()
-        images['ratings'] = plot_to_base64(fig)
     
     all_keywords = []
     for r in reviews:
@@ -395,18 +429,7 @@ def generate_visualizations(reviews):
         plt.tight_layout()
         images['keywords'] = plot_to_base64(fig)
     
-    if counts:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-        
-        neg_issues = sorted([(cat, category_sentiment_map[cat].get("Negative", 0)) 
-                            for cat in category_sentiment_map.keys()],
-                           key=lambda x: x[1], reverse=True)[:8]
-        neg_cats, neg_vals = zip(*neg_issues) if neg_issues else ([], [])
-        
-        bars1 = ax1.barh(neg_cats, neg_vals, color='#ef4444', edgecolor='#dc2626', 
-                        linewidth=2, alpha=0.8)
-        ax1.set_title("🔴 Top Negative Issues", fontsize=16, fontweight='bold', 
-                     color='#e2e8f0')
+    return images
         ax1.set_xlabel("Count", fontsize=12, fontweight='bold', color='#e2e8f0')
         ax1.invert_yaxis()
         ax1.grid(axis='x', alpha=0.3, linestyle='--')
