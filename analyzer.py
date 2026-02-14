@@ -285,22 +285,26 @@ def generate_visualizations(reviews):
         df_counts = df_counts.sort_values("Count", ascending=False)
         
         fig, ax = plt.subplots(figsize=(14, 7))
-        bars = ax.bar(df_counts["Category"], df_counts["Count"], 
-                     color=plt.cm.viridis(range(len(df_counts))), 
-                     edgecolor='black', linewidth=1.5, alpha=0.85)
+        y_positions = range(len(df_counts))
+        colors = plt.cm.viridis(range(len(df_counts)))
+        
+        ax.hlines(y=y_positions, xmin=0, xmax=df_counts["Count"],
+                  color=colors, linewidth=6, alpha=0.9)
+        ax.scatter(df_counts["Count"], y_positions, s=140,
+                   color=colors, edgecolor='black', linewidth=1.3, zorder=3)
+        
+        ax.set_yticks(list(y_positions))
+        ax.set_yticklabels(df_counts["Category"], fontsize=12)
+        ax.invert_yaxis()
         
         ax.set_title("📊 Complaint Frequency by Category", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Category", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Number of Mentions", fontsize=14, fontweight='bold')
-        plt.xticks(rotation=45, ha='right', fontsize=12)
-        ax.grid(axis='y', alpha=0.4, linestyle='--')
+        ax.set_xlabel("Number of Mentions", fontsize=14, fontweight='bold')
+        ax.set_ylabel("Category", fontsize=14, fontweight='bold')
+        ax.grid(axis='x', alpha=0.4, linestyle='--')
         
-        # Add value labels on bars
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height,
-                   f'{int(height)}',
-                   ha='center', va='bottom', fontsize=11, fontweight='bold')
+        for y_pos, count in zip(y_positions, df_counts["Count"]):
+            ax.text(count + 0.2, y_pos, f'{int(count)}',
+                    va='center', fontsize=11, fontweight='bold')
         
         plt.tight_layout()
         images['category_bar'] = plot_to_base64(fig)
@@ -380,20 +384,25 @@ def generate_visualizations(reviews):
         fig, ax = plt.subplots(figsize=(13, 9))
         keywords = list(top_keywords.keys())
         counts_list = list(top_keywords.values())
+        y_positions = range(len(keywords))
         
+        sizes = [max(120, v * 70) for v in counts_list]
         colors_gradient = plt.cm.plasma(range(len(keywords)))
-        bars = ax.barh(keywords, counts_list, color=colors_gradient, 
-                      edgecolor='black', linewidth=1.3, alpha=0.85)
+        ax.scatter(counts_list, y_positions, s=sizes, c=colors_gradient,
+                   alpha=0.8, edgecolor='black', linewidth=1.2)
+        
+        ax.set_yticks(list(y_positions))
+        ax.set_yticklabels(keywords, fontsize=12)
+        ax.invert_yaxis()
         
         ax.set_title("🔑 Top 15 Keywords in Reviews", fontsize=20, fontweight='bold', pad=25)
         ax.set_xlabel("Frequency", fontsize=14, fontweight='bold')
         ax.set_ylabel("Keywords", fontsize=14, fontweight='bold')
-        ax.invert_yaxis()
         ax.grid(axis='x', alpha=0.4, linestyle='--')
         
-        # Add value labels
-        for i, (bar, v) in enumerate(zip(bars, counts_list)):
-            ax.text(v + 0.5, i, str(v), va='center', fontsize=11, fontweight='bold')
+        for y_pos, count in zip(y_positions, counts_list):
+            ax.text(count + 0.4, y_pos, str(count), va='center',
+                    fontsize=11, fontweight='bold')
         
         plt.tight_layout()
         images['keywords_bar'] = plot_to_base64(fig)
@@ -405,21 +414,22 @@ def generate_visualizations(reviews):
         counts_list = list(source_distribution.values())
         
         colors_list = plt.cm.Set3(range(len(sources)))
-        bars = ax.bar(sources, counts_list, color=colors_list, 
-                     edgecolor='black', linewidth=1.5, alpha=0.85)
+        wedges, texts, autotexts = ax.pie(
+            counts_list,
+            labels=sources,
+            autopct='%1.1f%%',
+            startangle=90,
+            colors=colors_list,
+            wedgeprops={'width': 0.4, 'edgecolor': 'white'}
+        )
+        
+        for autotext in autotexts:
+            autotext.set_color('black')
+            autotext.set_fontsize(11)
+            autotext.set_fontweight('bold')
         
         ax.set_title("📂 Reviews by Data Source", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Data Source", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold')
-        plt.xticks(rotation=45, ha='right', fontsize=12)
-        ax.grid(axis='y', alpha=0.4, linestyle='--')
-        
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height,
-                   f'{int(height)}',
-                   ha='center', va='bottom', fontsize=12, fontweight='bold')
+        ax.axis('equal')
         
         plt.tight_layout()
         images['source_distribution'] = plot_to_base64(fig)
@@ -428,18 +438,20 @@ def generate_visualizations(reviews):
     if rating_distribution:
         fig, ax = plt.subplots(figsize=(12, 7))
         
-        n, bins, patches = ax.hist(rating_distribution, bins=25, 
-                                   color='mediumseagreen', 
-                                   edgecolor='black', linewidth=1.2, alpha=0.75)
+        df_ratings = pd.DataFrame({'rating': rating_distribution})
+        sns.violinplot(y='rating', data=df_ratings, ax=ax, color='mediumseagreen',
+                       inner=None, linewidth=1.2, alpha=0.8)
+        sns.boxplot(y='rating', data=df_ratings, ax=ax, width=0.2,
+                    color='white', fliersize=3, linewidth=1.3)
         
-        mean_rating = sum(rating_distribution)/len(rating_distribution)
-        ax.axvline(x=mean_rating, color='red', linestyle='--', linewidth=3, 
-                  label=f'Mean: {mean_rating:.2f}', alpha=0.8)
+        mean_rating = sum(rating_distribution) / len(rating_distribution)
+        ax.axhline(y=mean_rating, color='red', linestyle='--', linewidth=2.5,
+                   label=f'Mean: {mean_rating:.2f}', alpha=0.8)
         
         ax.set_title("⭐ Rating Distribution", fontsize=20, fontweight='bold', pad=25)
-        ax.set_xlabel("Rating", fontsize=14, fontweight='bold')
-        ax.set_ylabel("Frequency", fontsize=14, fontweight='bold')
-        ax.legend(fontsize=13, loc='upper left')
+        ax.set_xlabel("")
+        ax.set_ylabel("Rating", fontsize=14, fontweight='bold')
+        ax.legend(fontsize=13, loc='upper right')
         ax.grid(axis='y', alpha=0.4, linestyle='--')
         
         plt.tight_layout()
@@ -462,16 +474,27 @@ def generate_visualizations(reviews):
         df_timeline['week'] = df_timeline['date'].dt.to_period('W')
         
         weekly_sentiment = df_timeline.groupby(['week', 'sentiment']).size().unstack(fill_value=0)
+        weekly_sentiment = weekly_sentiment.reindex(columns=["Positive", "Neutral", "Negative"], fill_value=0)
         
         fig, ax = plt.subplots(figsize=(14, 7))
-        weekly_sentiment.plot(kind='line', ax=ax, marker='o', linewidth=3, markersize=8)
+        x_vals = range(len(weekly_sentiment.index))
+        ax.stackplot(
+            x_vals,
+            weekly_sentiment["Positive"],
+            weekly_sentiment["Neutral"],
+            weekly_sentiment["Negative"],
+            labels=["Positive", "Neutral", "Negative"],
+            colors=['#2ecc71', '#95a5a6', '#e74c3c'],
+            alpha=0.8
+        )
         
         ax.set_title("📅 Sentiment Trend Over Time", fontsize=20, fontweight='bold', pad=25)
         ax.set_xlabel("Week", fontsize=14, fontweight='bold')
         ax.set_ylabel("Number of Reviews", fontsize=14, fontweight='bold')
-        ax.legend(title='Sentiment', fontsize=12, title_fontsize=13)
+        ax.legend(title='Sentiment', fontsize=12, title_fontsize=13, loc='upper left')
         ax.grid(True, alpha=0.4, linestyle='--')
-        plt.xticks(rotation=45, ha='right', fontsize=11)
+        ax.set_xticks(list(x_vals))
+        ax.set_xticklabels(weekly_sentiment.index.astype(str), rotation=45, ha='right', fontsize=11)
         
         plt.tight_layout()
         images['sentiment_trend'] = plot_to_base64(fig)
