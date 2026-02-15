@@ -10,6 +10,7 @@ A comprehensive AI-powered restaurant review analysis platform with sentiment an
 ## 📋 Table of Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [System Architecture](#system-architecture)
 - [Installation](#installation)
 - [Project Structure](#project-structure)
@@ -17,8 +18,13 @@ A comprehensive AI-powered restaurant review analysis platform with sentiment an
 - [API Endpoints](#api-endpoints)
 - [Technologies Used](#technologies-used)
 - [Troubleshooting](#troubleshooting)
+- [Performance](#performance)
 - [Contributing](#contributing)
 - [License](#license)
+- [Authors](#authors)
+- [Acknowledgments](#acknowledgments)
+- [Contact](#contact)
+- [Future Roadmap](#future-roadmap)
 
 ## ✨ Features
 
@@ -55,21 +61,21 @@ A comprehensive AI-powered restaurant review analysis platform with sentiment an
 - CSV export functionality
 - Comprehensive statistics
 
-## Implementation Screenshots
+## Screenshots
 
-### Home_Page
+### Home Page
 ![Home Page](images/Home_Page.png)
 ![Home Page 2](images/Home_Page_2.png)
 
-### Analysis_Report
+### Analysis Report
 ![Analysis Result](images/Analysis_Result.png)
 ![Visual Analytics Dashboard](images/Visual_Analytics_Dashboard.png)
 ![Visual Analytics Dashboard 2](images/Visual_Analytics_Dashboard_2.png)
 
-### Recommendation-List
+### Recommendation List
 ![Recommendation List](images/Recommendation_List.png)
 
-### AI-Chat-Assistant
+### AI Chat Assistant
 ![AI Chat Assistant](images/AI_Chat_Assistant.png)
 ![AI Chat Assistant 2](images/AI_Chat_Assistant_2.png)
 
@@ -169,7 +175,7 @@ Visit: `http://localhost:5000`
 ## 📁 Project Structure
 
 ```
-restaurant-review-analysis/
+Smart_Restaurant_System/
 │
 ├── app.py                      # Main Flask application
 ├── analyzer.py                 # Sentiment analysis & visualizations
@@ -177,35 +183,36 @@ restaurant-review-analysis/
 ├── rag_chat.py                 # RAG chat with FAISS
 │
 ├── requirements.txt            # Python dependencies
-├── README.md                   # This file
-├── .gitignore                  # Git ignore rules
+├── Readme.md                   # This file
+├── LICENSE                     # License
 │
 ├── datasets/                   # CSV data files
+│   ├── import_csvs_to_mysql.py
 │   ├── mumbaires.csv
 │   ├── Resreviews.csv
 │   ├── reviews.csv
+│   ├── Yelpreviws.csv
 │   ├── zomato.csv
 │   └── zomato2.csv
+│
+├── images/                     # README screenshots
 │
 ├── vector_db/                  # FAISS vector indexes
 │   ├── Restaurant_Name.faiss
 │   └── Restaurant_Name_metadata.pkl
 │
-├── cache/                      # Temporary cache files
+├── instance/                   # Local runtime data
 ├── uploads/                    # User uploaded files
 │
 ├── templates/                  # HTML templates
+│   ├── base.html
 │   ├── index.html
 │   ├── results.html
 │   ├── recommendations.html
 │   └── chat.html
 │
-├── static/                     # Static assets
-│   ├── css/
-│   ├── js/
-│   └── images/
-│
-└── reviews.db                  # SQLite database
+└── static/                     # Static assets
+  └── style.css
 ```
 
 ## ⚙️ Configuration
