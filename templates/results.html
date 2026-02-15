@@ -663,7 +663,7 @@
                 <i class="fas fa-map-marker-alt"></i> Restaurant Location
             </h5>
             <p style="margin: 0; color: #475569;">{{ visualizations.kpi_metrics.address }}</p>
-            {% if visualizations.kpi_metrics.location != 'N/A' %}
+            {% if visualizations.kpi_metrics.location != 'N/A' and visualizations.kpi_metrics.location != visualizations.kpi_metrics.address %}
             <p style="margin: 0.5rem 0 0 0; color: #475569;"><strong>Location:</strong> {{ visualizations.kpi_metrics.location }}</p>
             {% endif %}
         </div>

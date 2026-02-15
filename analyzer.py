@@ -200,7 +200,16 @@ def generate_visualizations(reviews):
         'cuisines': restaurant_info.get('cuisines') or 'N/A'
     }
     
-    rating_list = [r.rating for r in reviews if hasattr(r, 'rating') and r.rating]
+    rating_list = []
+    for r in reviews:
+        if not hasattr(r, 'rating') or r.rating in (None, ''):
+            continue
+        try:
+            rating_val = float(r.rating)
+        except (TypeError, ValueError):
+            continue
+        if not np.isnan(rating_val):
+            rating_list.append(rating_val)
     sentiment_list = [r.sentiment for r in reviews if hasattr(r, 'sentiment') and r.sentiment]
     
     if rating_list:
@@ -588,9 +597,18 @@ def generate_visualizations(reviews):
     
     if rating_list and len(rating_list) > 0:
         fig, ax = plt.subplots(figsize=(12, 6))
-        sns.histplot(rating_list, bins=[0, 1, 2, 3, 4, 5, 6], kde=True,
-                     color='#14b8a6', edgecolor='#0ea5e9', linewidth=1.5,
-                     ax=ax, kde_kws={'color': '#f59e0b', 'linewidth': 2})
+        kde_enabled = len(set(rating_list)) > 1
+        histplot_kwargs = dict(
+            bins=[0, 1, 2, 3, 4, 5, 6],
+            kde=kde_enabled,
+            color='#14b8a6',
+            edgecolor='#0ea5e9',
+            linewidth=1.5,
+            ax=ax
+        )
+        if kde_enabled:
+            histplot_kwargs['line_kws'] = {'color': '#f59e0b', 'linewidth': 2}
+        sns.histplot(rating_list, **histplot_kwargs)
         ax.set_title("⭐ Rating Distribution", fontsize=20, fontweight='bold', 
                     pad=25, color='#e2e8f0')
         ax.set_xlabel("Rating", fontsize=14, fontweight='bold', color='#e2e8f0')
@@ -869,9 +887,18 @@ def generate_visualizations(reviews):
     
     if len(review_lengths) > 0:
         fig, ax = plt.subplots(figsize=(12, 6))
-        sns.histplot(review_lengths, bins=20, kde=True, color='#0ea5e9',
-                     edgecolor='#14b8a6', linewidth=1.5, ax=ax,
-                     kde_kws={'color': '#f59e0b', 'linewidth': 2})
+        kde_enabled = len(set(review_lengths)) > 1
+        histplot_kwargs = dict(
+            bins=20,
+            kde=kde_enabled,
+            color='#0ea5e9',
+            edgecolor='#14b8a6',
+            linewidth=1.5,
+            ax=ax
+        )
+        if kde_enabled:
+            histplot_kwargs['line_kws'] = {'color': '#f59e0b', 'linewidth': 2}
+        sns.histplot(review_lengths, **histplot_kwargs)
         p25, p50, p75 = np.percentile(review_lengths, [25, 50, 75])
         ax.axvline(x=p25, color='#94a3b8', linestyle='--', linewidth=1.5, label='25th')
         ax.axvline(x=p50, color='#f59e0b', linestyle='--', linewidth=2, label='Median')
