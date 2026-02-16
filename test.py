@@ -1,10 +1,8 @@
 import pandas as pd
 import mysql.connector
 
-# Load CSV
 df = pd.read_csv("datasets/six.csv", encoding="latin1")
 
-# Connect to MySQL
 conn = mysql.connector.connect(
     host="localhost",
     user="root",
@@ -14,7 +12,6 @@ conn = mysql.connector.connect(
 
 cursor = conn.cursor()
 
-# Create table manually (example)
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS restaurants (
     name TEXT,
@@ -25,7 +22,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
 )
 """)
 
-# Insert data
 for _, row in df.iterrows():
     cursor.execute("""
     INSERT INTO restaurants (name, address, rate, review_text, reviewer_rating)
