@@ -524,26 +524,6 @@ def results():
                          source_counts=source_counts,
                          visualizations=viz_images)
 
-@app.route("/recommendations")
-def recommendations():
-    restaurant = request.args.get("restaurant_name", "")
-    if not restaurant:
-        flash("Missing restaurant name", "error")
-        return redirect(url_for("index"))
-    
-    reviews = Review.query.filter(Review.restaurant.ilike(f"%{restaurant}%")).all()
-    if not reviews:
-        flash(f"No reviews found for '{restaurant}'", "warning")
-        return redirect(url_for("index"))
-    
-    recs, counts, sentiments = summarize_reviews_for_recommendations(reviews)
-    
-    return render_template("recommendations.html",
-                         restaurant=restaurant,
-                         recommendations=recs,
-                         category_counts=counts,
-                         sentiment_counts=sentiments)
-
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     global rag_instance, current_indexed_restaurant
