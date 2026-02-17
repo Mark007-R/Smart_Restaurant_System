@@ -454,7 +454,97 @@ class RAGChat:
         
         return answer
 
-    
+    def _synthesize_intelligent_answer(self, query, retrieved_docs, intent):
+        all_text = " ".join([doc['text'].lower() for doc in retrieved_docs])
+        
+        positive_words = ['good', 'great', 'excellent', 'amazing', 'delicious', 'perfect', 
+                         'wonderful', 'fantastic', 'love', 'best', 'awesome', 'outstanding']
+        negative_words = ['bad', 'poor', 'terrible', 'horrible', 'awful', 'worst', 
+                         'disappointing', 'waste', 'avoid', 'never', 'disgusting', 'pathetic']
+        
+        pos_count = sum(all_text.count(word) for word in positive_words)
+        neg_count = sum(all_text.count(word) for word in negative_words)
+        
+        key_terms = self._extract_key_terms([doc['text'] for doc in retrieved_docs])
+        
+        ratings = [doc['metadata'].get('rating') for doc in retrieved_docs 
+                  if doc['metadata'].get('rating')]
+        avg_rating = None
+        if ratings:
+            valid_ratings = [float(r) for r in ratings if str(r).replace('.','').isdigit()]
+            if valid_ratings:
+                avg_rating = sum(valid_ratings) / len(valid_ratings)
+        
+        summary = ""
+        
+        if intent == 'quality':
+            if pos_count > neg_count * 1.5:
+                summary = "✅ **Food quality is highly praised** by customers. "
+            elif pos_count > neg_count:
+                summary = "👍 **Generally good food quality** with some positive mentions. "
+            else:
+                summary = "⚠️ **Mixed reviews about food quality** - check specifics. "
+            
+            if avg_rating:
+                summary += f"Average rating: **{avg_rating:.1f}/5**. "
+            summary += f"\n   Key mentions: {', '.join(key_terms[:5])}"
+        
+        elif intent == 'service':
+            if 'slow' in all_text or 'long wait' in all_text:
+                summary = "⏰ **Service speed is a concern** mentioned by multiple customers. "
+            elif 'rude' in all_text or 'unfriendly' in all_text:
+                summary = "😐 **Staff attitude needs improvement** according to reviews. "
+            elif pos_count > neg_count:
+                summary = "👏 **Service is appreciated** by most customers. "
+            else:
+                summary = "⚠️ **Service quality varies** - mixed experiences reported. "
+        
+        elif intent == 'price':
+            if 'expensive' in all_text or 'overpriced' in all_text:
+                summary = "💸 **Prices are on the higher side** as per customer feedback. "
+            elif 'value' in all_text and pos_count > neg_count:
+                summary = "💰 **Good value for money** mentioned by customers. "
+            else:
+                summary = "💵 **Pricing is considered reasonable** by most reviewers. "
+        
+        elif intent == 'hygiene':
+            if neg_count > pos_count:
+                summary = "🚨 **Hygiene concerns raised** - cleanliness needs attention. "
+            else:
+                summary = "✨ **Cleanliness standards are maintained** well. "
+        
+        elif intent == 'ambience':
+            if pos_count > neg_count:
+                summary = "🏪 **Good ambience and atmosphere** appreciated by visitors. "
+            else:
+                summary = "🪑 **Ambience feedback is mixed** - personal preference varies. "
+        
+        elif intent == 'recommend':
+            sentiment_ratio = pos_count / (neg_count + 1)
+            
+            if sentiment_ratio > 2.0 and (avg_rating is None or avg_rating >= 4.0):
+                summary = "🌟 **HIGHLY RECOMMENDED!** Strong positive feedback across reviews. "
+            elif sentiment_ratio > 1.2:
+                summary = "✅ **Generally Recommended** with mostly positive experiences. "
+            elif sentiment_ratio > 0.8:
+                summary = "⚖️ **Mixed Reviews** - read details before deciding. "
+            else:
+                summary = "⚠️ **Caution Advised** - significant negative feedback present. "
+            
+            if avg_rating:
+                summary += f"\n   Overall Rating: **{avg_rating:.1f}/5**"
+        
+        else:
+            if pos_count > neg_count * 1.5:
+                summary = "✅ **Overall positive sentiment** in reviews. "
+            elif pos_count > neg_count:
+                summary = "👍 **Mostly positive feedback** with some concerns. "
+            else:
+                summary = "⚠️ **Mixed or negative feedback** - proceed with caution. "
+            
+            summary += f"\n   Frequently mentioned: {', '.join(key_terms[:6])}"
+        
+        return summary
 
     def _extract_key_terms(self, texts):
         stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
