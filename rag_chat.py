@@ -412,47 +412,7 @@ class RAGChat:
         
         return answer, source_texts
 
-    def _generate_answer(self, query, retrieved_docs, scores, restaurant_name):
-        query_lower = query.lower()
-        
-        intents = {
-            'quality': ['quality', 'taste', 'food', 'delicious', 'flavor'],
-            'service': ['service', 'staff', 'waiter', 'wait', 'server'],
-            'price': ['price', 'cost', 'expensive', 'cheap', 'value'],
-            'hygiene': ['clean', 'hygiene', 'dirty', 'sanitize'],
-            'ambience': ['ambience', 'atmosphere', 'decor', 'vibe'],
-            'recommend': ['recommend', 'suggest', 'best', 'should', 'worth']
-        }
-        
-        detected_intent = None
-        for intent, keywords in intents.items():
-            if any(kw in query_lower for kw in keywords):
-                detected_intent = intent
-                break
-        
-        restaurant_phrase = f"**{restaurant_name}**" if restaurant_name else "this restaurant"
-        answer = f"💬 Based on {len(retrieved_docs)} relevant reviews about {restaurant_phrase}:\n\n"
-        
-        answer += "**📋 Most Relevant Reviews (by FAISS similarity):**\n"
-        for i, (doc, score) in enumerate(zip(retrieved_docs, scores), 1):
-            text = doc['text']
-            meta = doc['metadata']
-            
-            snippet = textwrap.shorten(text, width=180, placeholder="...")
-            rating = meta.get('rating', 'N/A')
-            source = meta.get('source', 'unknown')
-            relevance = int(score * 100)
-            
-            answer += f"\n**{i}.** {snippet}"
-            answer += f"\n   📊 Similarity: {relevance}% | ⭐ Rating: {rating} | 📁 Source: {source}\n"
-        
-        answer += "\n**🎯 AI Summary:**\n"
-        summary = self._synthesize_intelligent_answer(
-            query, retrieved_docs, detected_intent
-        )
-        answer += summary
-        
-        return answer
+    
 
     def _synthesize_intelligent_answer(self, query, retrieved_docs, intent):
         all_text = " ".join([doc['text'].lower() for doc in retrieved_docs])
