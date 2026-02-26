@@ -2,6 +2,7 @@ Flask==3.0.0
 Werkzeug==3.0.1
 SQLAlchemy==2.0.23
 Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.1
 pandas==2.1.4
 numpy==1.26.2
 nltk==3.8.1
