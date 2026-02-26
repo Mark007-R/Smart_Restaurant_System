@@ -221,7 +221,6 @@ def generate_visualizations(reviews):
         kpi_metrics['positive_pct'] = round((pos_count / total) * 100, 1)
         kpi_metrics['negative_pct'] = round((neg_count / total) * 100, 1)
     
-    # Check ALL CSV files for KPI data (cost, online_order, table_booking, location)
     csv_files_for_kpis = ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv']
     for csv_file in csv_files_for_kpis:
         try:
@@ -230,7 +229,6 @@ def generate_visualizations(reviews):
                 df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
                 df.columns = df.columns.str.strip()
                 
-                # Find name column
                 name_col = None
                 for col in ['name', 'Restaurant Name', 'business_name', 'restaurant_name']:
                     if col in df.columns:
@@ -242,24 +240,20 @@ def generate_visualizations(reviews):
                     if not df_rest.empty:
                         row = df_rest.iloc[0]
                         
-                        # Cost - try different column variations
                         if kpi_metrics['avg_cost'] == 'N/A':
                             for cost_col in ['cost', 'approx_cost(for two people)', 'Cost', 'price']:
                                 if cost_col in df_rest.columns and pd.notna(row[cost_col]):
                                     kpi_metrics['avg_cost'] = str(row[cost_col])
                                     break
                         
-                        # Online order
                         if kpi_metrics['online_order'] == 'N/A' and 'online_order' in df_rest.columns:
                             if pd.notna(row['online_order']):
                                 kpi_metrics['online_order'] = str(row['online_order'])
                         
-                        # Table booking
                         if kpi_metrics['table_booking'] == 'N/A' and 'book_table' in df_rest.columns:
                             if pd.notna(row['book_table']):
                                 kpi_metrics['table_booking'] = str(row['book_table'])
                         
-                        # Location - try different column variations
                         if kpi_metrics['location'] == 'N/A':
                             for loc_col in ['location', 'Location', 'address', 'Address', 'area']:
                                 if loc_col in df_rest.columns and pd.notna(row[loc_col]):
@@ -271,7 +265,6 @@ def generate_visualizations(reviews):
     images['kpi_metrics'] = kpi_metrics
     images['restaurant_info'] = restaurant_info
     
-    # Aggregate ratings by category from ALL CSV files
     ratings_by_category = {}
     avg_ratings = []
     
@@ -283,7 +276,6 @@ def generate_visualizations(reviews):
                 df_reviews = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
                 df_reviews.columns = df_reviews.columns.str.strip()
                 
-                # Try different column name variations
                 name_col = None
                 for col in ['business_name', 'Restaurant Name', 'name', 'restaurant_name', 'Business Name']:
                     if col in df_reviews.columns:
@@ -296,7 +288,6 @@ def generate_visualizations(reviews):
                     )]
                     
                     if not df_rest.empty:
-                        # Extract ratings by category
                         if 'rating_category' in df_rest.columns and 'rating' in df_rest.columns:
                             for cat in df_rest['rating_category'].unique():
                                 if pd.notna(cat):
@@ -307,7 +298,6 @@ def generate_visualizations(reviews):
                             
                             avg_ratings.extend(df_rest['rating'].dropna().tolist())
                         
-                        # Also check for direct rating column without category
                         elif 'rating' in df_rest.columns:
                             avg_ratings.extend(df_rest['rating'].dropna().tolist())
                         elif 'Rating' in df_rest.columns:
@@ -345,7 +335,6 @@ def generate_visualizations(reviews):
         plt.tight_layout()
         images['ratings_by_category'] = plot_to_base64(fig)
     
-    # Aggregate menu items from ALL CSV files
     all_menu_items = []
     csv_files_for_menu = ['zomato2.csv', 'zomato.csv', 'mumbaires.csv']
     
@@ -356,7 +345,6 @@ def generate_visualizations(reviews):
                 df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
                 df.columns = df.columns.str.strip()
                 
-                # Try different column name variations
                 name_col = None
                 for col in ['Restaurant_Name', 'name', 'Restaurant Name', 'restaurant_name']:
                     if col in df.columns:
@@ -369,7 +357,6 @@ def generate_visualizations(reviews):
                     )]
                     
                     if not df_items.empty:
-                        # Check for menu item columns
                         item_col = None
                         for col in ['Item_Name', 'dish_name', 'menu_item', 'item', 'dish']:
                             if col in df_items.columns:
@@ -407,9 +394,8 @@ def generate_visualizations(reviews):
             print(f"Error reading menu from {csv_file}: {e}")
     
     if all_menu_items:
-        # Sort by votes and get top items
         menu_df = pd.DataFrame(all_menu_items)
-        menu_df = menu_df[menu_df['votes'] > 0]  # Filter items with votes
+        menu_df = menu_df[menu_df['votes'] > 0]
         if not menu_df.empty:
             top_items = menu_df.nlargest(8, 'votes')
             
@@ -636,7 +622,6 @@ def generate_visualizations(reviews):
         plt.tight_layout()
         images['rating_boxplot'] = plot_to_base64(fig)
     
-    # Aggregate cost and feature data from ALL CSV files
     all_cost_rating_data = []
     all_online_order_data = []
     all_table_booking_data = []
@@ -650,14 +635,12 @@ def generate_visualizations(reviews):
                 df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
                 df.columns = df.columns.str.strip()
                 
-                # Find restaurant name column
                 name_col = None
                 for col in ['name', 'Restaurant Name', 'business_name', 'restaurant_name']:
                     if col in df.columns:
                         name_col = col
                         break
                 
-                # Find rating column
                 rating_col = None
                 for col in ['rate', 'rating', 'aggregate_rating', 'Rating']:
                     if col in df.columns:
@@ -668,7 +651,6 @@ def generate_visualizations(reviews):
                     df_rest = df[df[name_col].astype(str).str.contains(restaurant_name, case=False, na=False)]
                     
                     if not df_rest.empty:
-                        # Collect cost data
                         cost_col = None
                         for col in ['cost', 'approx_cost(for two people)', 'Cost', 'price']:
                             if col in df.columns:
@@ -682,7 +664,6 @@ def generate_visualizations(reviews):
                                 if pd.notna(cost_val) and pd.notna(rate_val) and cost_val > 0:
                                     all_cost_rating_data.append({'cost': cost_val, 'rating': rate_val})
                         
-                        # Collect online order data
                         if 'online_order' in df.columns:
                             for _, row in df_rest.iterrows():
                                 online_val = str(row['online_order']).strip()
@@ -690,7 +671,6 @@ def generate_visualizations(reviews):
                                 if pd.notna(rate_val) and online_val in ['Yes', 'No']:
                                     all_online_order_data.append({'online_order': online_val, 'rating': rate_val})
                         
-                        # Collect table booking data
                         if 'book_table' in df.columns:
                             for _, row in df_rest.iterrows():
                                 table_val = str(row['book_table']).strip()
@@ -700,7 +680,6 @@ def generate_visualizations(reviews):
         except Exception as e:
             print(f"Error reading features from {csv_file}: {e}")
     
-    # Create online order visualization
     if all_online_order_data:
         try:
             online_df = pd.DataFrame(all_online_order_data)
@@ -727,7 +706,6 @@ def generate_visualizations(reviews):
         except Exception as e:
             print(f"Error creating online order chart: {e}")
     
-    # Create table booking visualization
     if all_table_booking_data:
         try:
             table_df = pd.DataFrame(all_table_booking_data)
@@ -754,7 +732,6 @@ def generate_visualizations(reviews):
         except Exception as e:
             print(f"Error creating table booking chart: {e}")
     
-    # Create cost visualizations
     if all_cost_rating_data:
         try:
             cost_df = pd.DataFrame(all_cost_rating_data)
@@ -791,21 +768,18 @@ def generate_visualizations(reviews):
     
     try:
         cuisine_list = []
-        # Check ALL CSV files for cuisine data
         for fname in ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv', 'Yelpreviws.csv', 'reviews.csv']:
             fpath = os.path.join(DATASET_FOLDER, fname)
             if os.path.exists(fpath):
                 df = pd.read_csv(fpath, encoding="utf-8", on_bad_lines="skip")
                 df.columns = df.columns.str.strip()
                 
-                # Try different cuisine column variations
                 cuisine_col = None
                 for col in ['cuisines', 'Cousines', 'cuisine', 'food_type', 'category']:
                     if col in df.columns:
                         cuisine_col = col
                         break
                 
-                # Try different name column variations
                 name_col = None
                 for col in ['name', 'Restaurant Name', 'business_name', 'restaurant_name']:
                     if col in df.columns:
@@ -826,7 +800,6 @@ def generate_visualizations(reviews):
             fig, ax = plt.subplots(figsize=(12, 7))
             cuisines = list(top_cuisines.keys())
             counts = list(top_cuisines.values())
-            # Use dark theme palette colors
             colors = ['#14b8a6', '#22c55e', '#0ea5e9', '#06b6d4', '#10b981', '#84cc16', '#eab308', '#f59e0b', '#ec4899', '#a855f7'][:len(cuisines)]
             bars = ax.barh(cuisines, counts, color=colors, edgecolor='#0ea5e9', 
                           linewidth=2, alpha=0.85)
@@ -846,7 +819,6 @@ def generate_visualizations(reviews):
     
     try:
         location_branches = []
-        # Check ALL CSV files for location data
         for fname in ['zomato.csv', 'mumbaires.csv', 'Resreviews.csv', 'reviews.csv', 'Yelpreviws.csv']:
             fpath = os.path.join(DATASET_FOLDER, fname)
             if os.path.exists(fpath):
@@ -981,14 +953,12 @@ def generate_visualizations(reviews):
             
             if not correlation_matrix.empty:
                 fig, ax = plt.subplots(figsize=(10, 8))
-                # Use coolwarm colormap which works better with dark theme
                 sns.heatmap(correlation_matrix, annot=True, fmt='.2f', cmap='coolwarm', 
                            center=0, linewidths=2, linecolor='#0f172a', 
                            cbar_kws={'label': 'Correlation'}, ax=ax,
                            annot_kws={'color': '#e2e8f0', 'fontweight': 'bold'})
                 ax.set_title("🔗 Feature Correlation Heatmap", fontsize=20, 
                            fontweight='bold', pad=25, color='#e2e8f0')
-                # Set tick labels color
                 ax.set_xticklabels(ax.get_xticklabels(), color='#e2e8f0')
                 ax.set_yticklabels(ax.get_yticklabels(), color='#e2e8f0')
                 ax.set_facecolor('#0f172a')
@@ -998,7 +968,6 @@ def generate_visualizations(reviews):
     except Exception as e:
         print(f"Error creating correlation heatmap: {e}")
     
-    # Aggregate top rated items from ALL CSV files
     all_rated_items = []
     for csv_file in ['zomato2.csv', 'zomato.csv', 'mumbaires.csv']:
         try:
@@ -1007,7 +976,6 @@ def generate_visualizations(reviews):
                 df = pd.read_csv(csv_path, encoding="utf-8", on_bad_lines="skip")
                 df.columns = df.columns.str.strip()
                 
-                # Find restaurant name column
                 name_col = None
                 for col in ['Restaurant_Name', 'name', 'Restaurant Name', 'restaurant_name']:
                     if col in df.columns:
@@ -1020,7 +988,6 @@ def generate_visualizations(reviews):
                     )]
                     
                     if not df_items.empty:
-                        # Find item and rating columns
                         item_col = None
                         for col in ['Item_Name', 'dish_name', 'menu_item', 'item', 'dish']:
                             if col in df_items.columns:
@@ -1054,13 +1021,11 @@ def generate_visualizations(reviews):
     if all_rated_items:
         items_df = pd.DataFrame(all_rated_items)
         if not items_df.empty:
-            # Top rated items chart
             top_rated = items_df.nlargest(5, 'rating')
             if not top_rated.empty:
                 fig, ax = plt.subplots(figsize=(12, 6))
                 items = [str(item)[:30] for item in top_rated['name']]
                 ratings = top_rated['rating']
-                # Use dark theme yellow/orange gradient
                 colors = ['#fbbf24', '#f59e0b', '#fb923c', '#f97316', '#ea580c'][:len(items)]
                 bars = ax.barh(items, ratings, color=colors, edgecolor='#14b8a6', 
                               linewidth=2, alpha=0.85)
@@ -1077,7 +1042,6 @@ def generate_visualizations(reviews):
                 plt.tight_layout()
                 images['top_rated_items'] = plot_to_base64(fig)
             
-            # Bestseller pie chart
             bestseller_count = sum(1 for item in all_rated_items 
                                   if str(item['bestseller']).upper() in ['BESTSELLER', 'YES'])
             total_items = len(all_rated_items)
