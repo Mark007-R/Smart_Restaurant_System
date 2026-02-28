@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
@@ -79,9 +81,42 @@ def build_or_get_rag(reviews_texts, docs_texts=None):
 
 @memoize
 def get_restaurant_image(restaurant_name):
+    api_key = app.config.get('GOOGLE_PLACES_API_KEY')
+    
+    if not api_key:
+        logger.warning("Google Places API key not set, using placeholder image")
+        hash_value = sum(ord(c) * (i + 1) for i, c in enumerate(restaurant_name))
+        unique_id = hash_value % 10000
+        return f"https://source.unsplash.com/800x600/?restaurant,{restaurant_name.replace(' ', '-')}&sig={unique_id}"
+    
+    try:
+        import requests
+        search_url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+        params = {
+            'input': restaurant_name,
+            'inputtype': 'textquery',
+            'fields': 'photos,name,place_id',
+            'key': api_key
+        }
+        
+        response = requests.get(search_url, params=params, timeout=5)
+        data = response.json()
+        
+        if data.get('status') == 'OK' and data.get('candidates'):
+            place = data['candidates'][0]
+            if 'photos' in place and len(place['photos']) > 0:
+                photo_reference = place['photos'][0]['photo_reference']
+                photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference={photo_reference}&key={api_key}"
+                logger.info(f"Found Google Places image for {restaurant_name}")
+                return photo_url
+        
+        logger.warning(f"No Google Places image found for {restaurant_name}, using fallback")
+    except Exception as e:
+        logger.error(f"Error fetching Google Places image: {e}")
+    
     hash_value = sum(ord(c) * (i + 1) for i, c in enumerate(restaurant_name))
     unique_id = hash_value % 10000
-    return f"https://loremflickr.com/800/600/food,restaurant/all?random={unique_id}"
+    return f"https://source.unsplash.com/800x600/?restaurant,{restaurant_name.replace(' ', '-')}&sig={unique_id}"
 
 def allowed_file(filename):
     is_valid, error = validate_filename(filename, ALLOWED_EXT)
@@ -89,9 +124,6 @@ def allowed_file(filename):
         logger.warning(f"Invalid filename: {filename} - {error}")
         return False
     return True
-
-# Use the helper function from utils - kept for backward compatibility
-# The function is now imported from utils.helpers
 
 def process_mumbaires_csv(filepath, restaurant_filter=None):
     try:
