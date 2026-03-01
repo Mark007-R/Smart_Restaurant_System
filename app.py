@@ -25,12 +25,12 @@ from utils.cache import memoize
 app = Flask(__name__)
 config_class = get_config(os.environ.get('FLASK_ENV', 'development'))
 app.config.from_object(config_class)
-logger = setup_logger(__name__, log_file='logs/app.log')
+logger = setup_logger(__name__)
 UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
 DATASET_FOLDER = app.config['DATASET_FOLDER']
 ALLOWED_EXT = app.config['ALLOWED_EXTENSIONS']
 db = SQLAlchemy(app)
-for folder in [UPLOAD_FOLDER, DATASET_FOLDER, 'logs', app.config.get('VECTOR_DB_FOLDER', 'vector_db')]:
+for folder in [UPLOAD_FOLDER, DATASET_FOLDER, app.config.get('VECTOR_DB_FOLDER', 'vector_db')]:
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
         logger.info(f"Created directory: {folder}")
