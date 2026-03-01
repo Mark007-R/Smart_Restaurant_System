@@ -801,4 +801,7 @@ def search_restaurants():
     return jsonify(list(unique.values())[:10])
 
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
+    # Use configuration-based debug mode
+    debug_mode = app.config.get('DEBUG', False)
+    app.run(debug=debug_mode, use_reloader=False, host='0.0.0.0', port=5000)
+
