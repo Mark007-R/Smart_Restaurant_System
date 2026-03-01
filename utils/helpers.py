@@ -19,7 +19,7 @@ def extract_reviews_from_zomato_reviews_list(reviews_list_str) -> List[str]:
             for item in parsed:
                 if isinstance(item, tuple) and len(item) >= 2:
                     review_text = item[0]
-                    if review_text and isinstance(review_text, str):
+                    if review_text and isinstance(review_text, str) and len(review_text) > 10:
                         reviews.append(review_text.strip())
         return reviews
     except (ValueError, SyntaxError) as e:
@@ -36,6 +36,9 @@ def extract_reviews_from_zomato_reviews_list(reviews_list_str) -> List[str]:
             logger.debug(f"Fallback review extraction failed: {e}")
     
     return reviews
+
+
+extract_reviews_from_zomato_list = extract_reviews_from_zomato_reviews_list
 
 
 def safe_read_csv(filepath: str, encoding: str = "utf-8") -> Optional[pd.DataFrame]:

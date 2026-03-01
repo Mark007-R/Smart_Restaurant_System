@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import os
+from utils.helpers import extract_reviews_from_zomato_list
 
 logger = logging.getLogger(__name__)
 nltk.download('stopwords', quiet=True)
@@ -1064,36 +1065,6 @@ def generate_visualizations(reviews):
                 images['bestseller_distribution'] = plot_to_base64(fig)
     
     return images
-
-def extract_reviews_from_zomato_list(reviews_list_str):
-    reviews = []
-    if pd.isna(reviews_list_str) or not reviews_list_str:
-        return reviews
-    
-    try:
-        parsed = ast.literal_eval(reviews_list_str)
-        if isinstance(parsed, list):
-            for item in parsed:
-                if isinstance(item, tuple) and len(item) >= 2:
-                    review_text = item[0]
-                    if review_text and isinstance(review_text, str) and len(review_text) > 10:
-                        reviews.append(review_text.strip())
-        return reviews
-    except (ValueError, SyntaxError) as e:
-        logger.debug(f"Failed to parse reviews via ast.literal_eval: {e}")
-        try:
-            cleaned = str(reviews_list_str).replace('[', '').replace(']', '')
-            parts = cleaned.split('(')
-            for part in parts:
-                if ')' in part:
-                    text = part.split(')')[0].strip()
-                    if text and len(text) > 10:
-                        reviews.append(text.strip('"').strip("'"))
-        except (ValueError, IndexError, AttributeError) as e:
-            logger.debug(f"Fallback review extraction failed: {e}")
-    
-    return reviews
-
 
 def get_reviews_from_datasets(restaurant_name):
     all_reviews = []

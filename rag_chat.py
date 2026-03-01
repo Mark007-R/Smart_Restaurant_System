@@ -11,6 +11,7 @@ from collections import Counter
 import re
 import pickle
 from datetime import datetime
+from utils.helpers import extract_reviews_from_zomato_list
 
 logger = logging.getLogger(__name__)
 
@@ -105,35 +106,6 @@ class RAGChat:
         except Exception as e:
             print(f"⚠️  Error loading vector DB: {e}")
             return False
-
-    def extract_reviews_from_zomato_list(self, reviews_list_str):
-        reviews = []
-        if pd.isna(reviews_list_str) or not reviews_list_str:
-            return reviews
-        
-        try:
-            parsed = ast.literal_eval(reviews_list_str)
-            if isinstance(parsed, list):
-                for item in parsed:
-                    if isinstance(item, tuple) and len(item) >= 2:
-                        review_text = item[0]
-                        if review_text and isinstance(review_text, str) and len(review_text) > 10:
-                            reviews.append(review_text.strip())
-            return reviews
-        except (ValueError, SyntaxError) as e:
-            logger.debug(f"Failed to parse reviews via ast.literal_eval: {e}")
-            try:
-                cleaned = str(reviews_list_str).replace('[', '').replace(']', '')
-                parts = cleaned.split('(')
-                for part in parts:
-                    if ')' in part:
-                        text = part.split(')')[0].strip()
-                        if text and len(text) > 10:
-                            reviews.append(text.strip('"').strip("'"))
-            except (ValueError, IndexError, AttributeError) as e:
-                logger.debug(f"Fallback review extraction failed: {e}")
-        
-        return reviews
 
     def load_mumbaires_csv(self, filepath, restaurant_name=None):
         reviews = []
@@ -233,7 +205,7 @@ class RAGChat:
                 restaurant = str(row.get('name', '')).strip()
                 reviews_list = row.get('reviews_list', '')
                 
-                extracted_reviews = self.extract_reviews_from_zomato_list(reviews_list)
+                extracted_reviews = extract_reviews_from_zomato_list(reviews_list)
                 
                 for review_text in extracted_reviews:
                     reviews.append({
