@@ -52,7 +52,7 @@ def fetch_image_from_google_places(restaurant_name, api_key):
             'fields': 'photos,name,place_id',
             'key': api_key
         }
-        response = requests.get(search_url, params=params, timeout=5)
+        response = requests.get(search_url, params=params, timeout=2)
         data = response.json()
         if data.get('status') == 'OK' and data.get('candidates'):
             place = data['candidates'][0]
@@ -80,7 +80,7 @@ def fetch_image_from_web_search(restaurant_name):
         }
         try:
             search_url = f"https://www.bing.com/images/search?q={restaurant_name}+restaurant"
-            response = requests.get(search_url, headers=headers, timeout=5)
+            response = requests.get(search_url, headers=headers, timeout=2)
             soup = BeautifulSoup(response.content, 'html.parser')
             img_tags = soup.find_all('img', {'class': 'mimg'})
             if img_tags:
@@ -116,7 +116,7 @@ def fetch_image_from_unsplash(restaurant_name):
                         'w': 800,
                         'h': 600
                     },
-                    timeout=5
+                    timeout=2
                 )
                 if response.status_code == 200:
                     data = response.json()
@@ -355,6 +355,7 @@ def process_zomato2_csv(filepath, restaurant_filter=None):
         print(f"Error processing zomato2.csv: {e}")
         return [], []
 
+@memoize
 def process_all_datasets(dataset_folder, restaurant_filter=None):
     all_reviews = []
     all_restaurants = []
@@ -391,14 +392,21 @@ def register_manager_routes(app, db, User, Review, manager_required, login_requi
     @app.route("/manager/dashboard", methods=["GET"])
     @manager_required
     def manager_dashboard():
-        """Full-featured dashboard for managers (app.py features)"""
+        """
+        Full-featured dashboard for managers
+        
+        Performance note: Uses placeholder images for fast loading.
+        Real images can be fetched via lazy loading in frontend or by
+        calling get_restaurant_image(name, GOOGLE_PLACES_API_KEY) if needed.
+        """
         try:
             _, restaurants_data = process_all_datasets(DATASET_FOLDER, restaurant_filter=None)
             unique_restaurants = {}
             for r in restaurants_data:
                 name = r['name']
                 if name not in unique_restaurants:
-                    r['photo'] = get_restaurant_image(name, GOOGLE_PLACES_API_KEY)
+                    # Use placeholder images for fast loading (skip expensive API calls)
+                    r['photo'] = generate_placeholder_image(name)
                     unique_restaurants[name] = r
             restaurants = list(unique_restaurants.values())
             if not restaurants:
