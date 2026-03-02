@@ -615,11 +615,11 @@ def manager_dashboard():
             flash("No restaurant data found in datasets folder.", "warning")
         else:
             logger.info(f"Loaded {len(restaurants)} restaurants for manager dashboard")
-        return render_template("manager_dashboard.html", restaurants=restaurants[:50])
+        return render_template("index.html", restaurants=restaurants[:50])
     except Exception as e:
         logger.error(f"Error loading manager dashboard: {e}", exc_info=True)
         flash("An error occurred while loading restaurants. Please try again.", "error")
-        return render_template("manager_dashboard.html", restaurants=[])
+        return render_template("index.html", restaurants=[])
 
 @app.route("/user/dashboard", methods=["GET"])
 @login_required
