@@ -1,6 +1,29 @@
 """Configuration management for Smart Restaurant System."""
 import os
 from datetime import timedelta
+from urllib.parse import quote_plus
+
+
+def _normalize_database_url(url):
+    if not url:
+        return None
+    if url.startswith('mysql://'):
+        return url.replace('mysql://', 'mysql+pymysql://', 1)
+    return url
+
+
+def _mysql_uri_from_env(prefix=''):
+    host = os.environ.get(f'{prefix}MYSQL_HOST') or os.environ.get('MYSQL_HOST')
+    port = os.environ.get(f'{prefix}MYSQL_PORT') or os.environ.get('MYSQL_PORT') or '3306'
+    user = os.environ.get(f'{prefix}MYSQL_USER') or os.environ.get('MYSQL_USER')
+    password = os.environ.get(f'{prefix}MYSQL_PASSWORD') or os.environ.get('MYSQL_PASSWORD') or ''
+    database = os.environ.get(f'{prefix}MYSQL_DATABASE') or os.environ.get('MYSQL_DATABASE')
+
+    if not host or not user or not database:
+        return None
+
+    encoded_password = quote_plus(password)
+    return f"mysql+pymysql://{user}:{encoded_password}@{host}:{port}/{database}?charset=utf8mb4"
 
 
 class Config:
@@ -44,7 +67,9 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+    SQLALCHEMY_DATABASE_URI = _normalize_database_url(os.environ.get('DEV_DATABASE_URL')) or \
+        _mysql_uri_from_env('DEV_') or \
+        _mysql_uri_from_env() or \
         'sqlite:///reviews.db'
     SQLALCHEMY_ECHO = False
     SESSION_COOKIE_SECURE = False
@@ -52,7 +77,10 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+    SQLALCHEMY_DATABASE_URI = _normalize_database_url(os.environ.get('DATABASE_URL')) or \
+        _normalize_database_url(os.environ.get('PROD_DATABASE_URL')) or \
+        _mysql_uri_from_env('PROD_') or \
+        _mysql_uri_from_env() or \
         'sqlite:///reviews.db'
     
     SESSION_COOKIE_SECURE = True
