@@ -262,7 +262,7 @@
       <i class="fas fa-user-plus"></i>
       <h2>Create Account</h2>
     </div>
-    
+
     <div class="auth-body">
       <form method="POST" action="{{ url_for('signup') }}" id="signupForm">
         <div class="form-group">
@@ -359,7 +359,7 @@
                 <div class="role-desc">View and analyze restaurant reviews</div>
               </label>
             </div>
-            
+
             <div class="role-option">
               <input type="radio" name="role" id="role_manager" value="manager">
               <label for="role_manager" class="role-label">
@@ -389,7 +389,7 @@
   function togglePassword(inputId, iconId) {
     const passwordInput = document.getElementById(inputId);
     const toggleIcon = document.getElementById(iconId);
-    
+
     if (passwordInput.type === 'password') {
       passwordInput.type = 'text';
       toggleIcon.classList.remove('fa-eye');
@@ -404,16 +404,16 @@
   function checkPasswordStrength() {
     const password = document.getElementById('password').value;
     const strengthBar = document.getElementById('strengthBar');
-    
+
     let strength = 0;
     if (password.length >= 6) strength += 25;
     if (password.length >= 10) strength += 25;
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
     if (/[0-9]/.test(password)) strength += 15;
     if (/[^A-Za-z0-9]/.test(password)) strength += 10;
-    
+
     strengthBar.style.width = strength + '%';
-    
+
     if (strength < 40) {
       strengthBar.style.background = '#ef4444';
     } else if (strength < 70) {
@@ -426,7 +426,7 @@
   document.getElementById('signupForm').addEventListener('submit', function(e) {
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirm_password').value;
-    
+
     if (password !== confirmPassword) {
       e.preventDefault();
       alert('Passwords do not match!');

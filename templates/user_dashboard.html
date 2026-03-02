@@ -327,24 +327,24 @@
   <div class="restaurant-card" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
     <img src="{{ restaurant.photo }}" alt="{{ restaurant.name }}" class="restaurant-image" 
          onerror="this.src='https://source.unsplash.com/400x300/?restaurant,food'">
-    
+
     <div class="restaurant-content">
       <div class="restaurant-name">{{ restaurant.name }}</div>
-      
+
       {% if restaurant.rating and restaurant.rating != 'N/A' %}
       <div class="restaurant-rating">
         <i class="fas fa-star"></i>
         {{ restaurant.rating }}
       </div>
       {% endif %}
-      
+
       {% if restaurant.address and restaurant.address != 'Address not available' %}
       <div class="restaurant-info">
         <i class="fas fa-map-marker-alt"></i>
         {{ restaurant.address[:50] }}{% if restaurant.address|length > 50 %}...{% endif %}
       </div>
       {% endif %}
-      
+
       <a href="/analyze?restaurant={{ restaurant.name }}" class="view-btn">
         <i class="fas fa-eye me-2"></i>
         View Details

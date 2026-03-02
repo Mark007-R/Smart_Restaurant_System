@@ -25,7 +25,7 @@
         to { opacity: 1; transform: translateY(0); }
     }
 
-    
+
     .results-header {
         text-align: center;
         padding: 3rem 2rem;
@@ -70,7 +70,7 @@
         z-index: 1;
     }
 
-    
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -192,7 +192,7 @@
         font-weight: 600;
     }
 
-    
+
     .source-breakdown {
         background: white;
         padding: 2rem;
@@ -233,7 +233,7 @@
         font-size: 1.25rem;
     }
 
-    
+
     .category-section {
         background: white;
         padding: 2rem;
@@ -279,7 +279,7 @@
         color: white;
     }
 
-    
+
     .visualization-section {
         margin: 3rem 0;
     }
@@ -352,7 +352,7 @@
         transform: scale(1.02);
     }
 
-    
+
     .reviews-section {
         margin: 4rem 0;
     }
@@ -443,7 +443,7 @@
         border-color: transparent;
     }
 
-    
+
     .action-section {
         margin-top: 4rem;
         padding: 3rem 2rem;
@@ -487,7 +487,7 @@
         background: var(--primary-gradient);
     }
 
-    
+
     .loading-placeholder {
         height: 300px;
         background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -501,7 +501,7 @@
         100% { background-position: -200% 0; }
     }
 
-    
+
     @media (max-width: 768px) {
         .page-container {
             padding: 1rem;
@@ -549,7 +549,7 @@
         }
     }
 
-    
+
     @media print {
         .action-section {
             display: none;
@@ -566,7 +566,7 @@
 </style>
 
 <div class="page-container">
-    
+
     <div class="results-header">
         <h2>
             <i class="fas fa-chart-line"></i>
@@ -589,7 +589,7 @@
                 <h3>{{ visualizations.kpi_metrics.total_reviews }}</h3>
                 <p>Total Reviews</p>
             </div>
-            
+
             <div class="stat-card total">
                 <div class="stat-icon">
                     <i class="fas fa-star"></i>
@@ -597,7 +597,7 @@
                 <h3>{{ visualizations.kpi_metrics.avg_rating }}</h3>
                 <p>Average Rating</p>
             </div>
-            
+
             <div class="stat-card positive">
                 <div class="stat-icon">
                     <i class="fas fa-thumbs-up"></i>
@@ -605,7 +605,7 @@
                 <h3>{{ visualizations.kpi_metrics.positive_pct }}%</h3>
                 <p>Positive Reviews</p>
             </div>
-            
+
             <div class="stat-card negative">
                 <div class="stat-icon">
                     <i class="fas fa-thumbs-down"></i>
@@ -613,7 +613,7 @@
                 <h3>{{ visualizations.kpi_metrics.negative_pct }}%</h3>
                 <p>Negative Reviews</p>
             </div>
-            
+
             {% if visualizations.kpi_metrics.avg_cost and visualizations.kpi_metrics.avg_cost != 'N/A' %}
             <div class="stat-card total">
                 <div class="stat-icon">
@@ -623,7 +623,7 @@
                 <p>Avg Cost for Two</p>
             </div>
             {% endif %}
-            
+
             {% if visualizations.kpi_metrics.online_order and visualizations.kpi_metrics.online_order != 'N/A' %}
             <div class="stat-card {{ 'positive' if visualizations.kpi_metrics.online_order == 'Yes' else 'neutral' }}">
                 <div class="stat-icon">
@@ -633,7 +633,7 @@
                 <p>Online Order</p>
             </div>
             {% endif %}
-            
+
             {% if visualizations.kpi_metrics.table_booking and visualizations.kpi_metrics.table_booking != 'N/A' %}
             <div class="stat-card {{ 'positive' if visualizations.kpi_metrics.table_booking == 'Yes' else 'neutral' }}">
                 <div class="stat-icon">
@@ -643,7 +643,7 @@
                 <p>Table Booking</p>
             </div>
             {% endif %}
-            
+
             {% if visualizations.kpi_metrics.cuisines and visualizations.kpi_metrics.cuisines != 'N/A' %}
             <div class="stat-card total">
                 <div class="stat-icon">
@@ -656,7 +656,7 @@
             </div>
             {% endif %}
         </div>
-        
+
         {% if visualizations.kpi_metrics.address != 'N/A' %}
         <div style="margin-top: 2rem; padding: 1.5rem; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 1rem;">
             <h5 style="color: #1e293b; margin-bottom: 1rem;">
@@ -671,7 +671,7 @@
     </div>
     {% endif %}
 
-    
+
     {% if source_counts %}
     <div class="source-breakdown">
         <h4>
@@ -690,7 +690,7 @@
     </div>
     {% endif %}
 
-    
+
     {% if category_counts %}
     <div class="category-section">
         <h4>
@@ -709,7 +709,7 @@
     </div>
     {% endif %}
 
-    
+
     <div class="visualization-section">
         <div class="section-header">
             <h3>
@@ -827,7 +827,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.ratings_by_category %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -839,7 +839,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.top_items %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -851,7 +851,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.sentiment %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -863,7 +863,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.problem_areas %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -875,7 +875,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.keywords %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -887,7 +887,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.rating_histogram %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -899,7 +899,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.rating_boxplot %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -911,7 +911,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.online_order_rating %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -923,7 +923,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.table_booking_rating %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -935,7 +935,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.cost_vs_rating %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -947,7 +947,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.cost_distribution %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -959,7 +959,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.cuisine_distribution %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -971,7 +971,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.branch_distribution %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -983,7 +983,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.review_length_dist %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -995,7 +995,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.length_vs_rating %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -1007,7 +1007,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.category_frequency %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -1019,7 +1019,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.correlation_heatmap %}
             <div class="col-md-12">
                 <div class="viz-card">
@@ -1031,7 +1031,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.top_rated_items %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -1043,7 +1043,7 @@
                 </div>
             </div>
             {% endif %}
-            
+
             {% if visualizations.bestseller_distribution %}
             <div class="col-md-6">
                 <div class="viz-card">
@@ -1058,7 +1058,7 @@
         </div>
     </div>
 
-    
+
     <div class="reviews-section">
         <div class="section-header">
             <h3>
@@ -1104,7 +1104,7 @@
         {% endfor %}
     </div>
 
-    
+
     <div class="action-section">
         <h4 class="fw-bold mb-3">
             <i class="fas fa-rocket"></i>
@@ -1113,7 +1113,7 @@
         <p class="text-muted">
             Explore AI-powered recommendations and chat with our intelligent assistant
         </p>
-        
+
         <div class="action-buttons">
             <a href="{{ url_for('recommendations', restaurant_name=restaurant) }}" class="btn btn-success action-btn">
                 <i class="fas fa-lightbulb"></i>

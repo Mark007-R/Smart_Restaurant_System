@@ -2,7 +2,7 @@
 {% block content %}
 
 <style>
-  
+
   .hero-section {
     text-align: center;
     padding: 4rem 2rem;
@@ -106,7 +106,7 @@
     letter-spacing: 1px;
   }
 
-  
+
   .search-container {
     background: white;
     padding: 2.5rem;
@@ -135,7 +135,7 @@
     font-size: 1.25rem;
   }
 
-  
+
   .upload-section {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
     padding: 2rem;
@@ -163,7 +163,7 @@
     font-size: 1.25rem;
   }
 
-  
+
   .form-label {
     font-weight: 700;
     color: #1e293b;
@@ -188,7 +188,7 @@
     border-color: #667eea;
   }
 
-  
+
   .restaurant-card {
     position: relative;
     overflow: hidden;
@@ -266,7 +266,7 @@
     overflow: hidden;
   }
 
-  
+
   .rating-badge {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
@@ -284,7 +284,7 @@
     font-size: 1rem;
   }
 
-  
+
   .source-badge {
     position: absolute;
     top: 1rem;
@@ -300,7 +300,7 @@
     z-index: 3;
   }
 
-  
+
   .feature-card {
     text-align: center;
     padding: 2rem;
@@ -371,7 +371,7 @@
     line-height: 1.6;
   }
 
-  
+
   .loading-spinner {
     display: none;
     text-align: center;
@@ -397,7 +397,7 @@
     border-right-color: transparent;
   }
 
-  
+
   .restaurant-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -405,7 +405,7 @@
     margin-top: 2rem;
   }
 
-  
+
   .section-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -433,7 +433,7 @@
     font-size: 1.1rem;
   }
 
-  
+
   .empty-state {
     text-align: center;
     padding: 5rem 2rem;
@@ -462,7 +462,7 @@
     font-size: 1rem;
   }
 
-  
+
   .info-card {
     background: white;
     padding: 1.5rem;
@@ -483,7 +483,7 @@
     margin-right: 0.5rem;
   }
 
-  
+
   .quick-actions {
     display: flex;
     gap: 1rem;
@@ -515,7 +515,7 @@
     transform: translateY(-3px);
   }
 
-  
+
   @media (max-width: 768px) {
     .hero-section {
       padding: 2.5rem 1.5rem;
@@ -559,7 +559,7 @@
     }
   }
 
-  
+
   @keyframes shimmer {
     0% {
       background-position: -1000px 0;
@@ -608,7 +608,7 @@
 
   <form method="POST" action="{{ url_for('analyze') }}" enctype="multipart/form-data" id="analyzeForm">
     <div class="row g-3 align-items-end">
-      
+
       <div class="col-md-6">
         <label class="form-label">
           <i class="fas fa-store"></i> Restaurant Name
@@ -623,14 +623,14 @@
         </datalist>
       </div>
 
-      
+
       <div class="col-md-3">
         <button type="submit" class="btn btn-success btn-lg w-100">
           <i class="fas fa-chart-line"></i> Analyze Now
         </button>
       </div>
 
-      
+
       <div class="col-md-3">
         <div class="form-check form-switch" style="padding-top: 1rem;">
           <input class="form-check-input" type="checkbox" name="try_scrape" id="enableScraping">
@@ -641,7 +641,7 @@
       </div>
     </div>
 
-    
+
     <div class="upload-section">
       <label class="form-label">
         <i class="fas fa-cloud-upload-alt"></i> Or Upload Your Own Dataset
@@ -654,7 +654,7 @@
     </div>
   </form>
 
-  
+
   <div class="loading-spinner" id="loadingSpinner">
     <div class="spinner-border" role="status">
       <span class="visually-hidden">Loading...</span>
@@ -1085,7 +1085,7 @@
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
   }
-  
+
   .no-results-message {
     animation: fadeIn 0.5s ease;
   }

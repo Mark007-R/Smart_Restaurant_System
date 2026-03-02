@@ -12,7 +12,7 @@ def extract_reviews_from_zomato_reviews_list(reviews_list_str) -> List[str]:
     reviews = []
     if pd.isna(reviews_list_str) or not reviews_list_str:
         return reviews
-    
+
     try:
         parsed = ast.literal_eval(reviews_list_str)
         if isinstance(parsed, list):
@@ -34,7 +34,7 @@ def extract_reviews_from_zomato_reviews_list(reviews_list_str) -> List[str]:
                         reviews.append(text.strip('"').strip("'"))
         except (ValueError, IndexError, AttributeError) as e:
             logger.debug(f"Fallback review extraction failed: {e}")
-    
+
     return reviews
 
 
@@ -57,73 +57,73 @@ def safe_read_csv(filepath: str, encoding: str = "utf-8") -> Optional[pd.DataFra
                 continue
     except (FileNotFoundError, PermissionError, ValueError) as e:
         logger.error(f"Error reading CSV {filepath}: {e}")
-    
+
     return None
 
 
 def clean_value(value, default: str = "") -> str:
     if pd.isna(value) or value is None:
         return default
-    
+
     value_str = str(value).strip()
-    
+
     if value_str.lower() in ['nan', 'none', 'null', '']:
         return default
-    
+
     return value_str
 
 
 def is_valid_review_text(text: str, min_length: int = 10) -> bool:
     if not text or not isinstance(text, str):
         return False
-    
+
     text = text.strip()
-    
+
     if len(text) < min_length:
         return False
-    
+
     if text.lower() in ['nan', 'none', 'null']:
         return False
-    
+
     return True
 
 
 def deduplicate_reviews(reviews: List[Dict]) -> List[Dict]:
     seen_hashes = set()
     unique_reviews = []
-    
+
     for review in reviews:
         text = review.get('text', '')
         text_hash = hashlib.md5(text.lower().strip().encode()).hexdigest()
-        
+
         if text_hash not in seen_hashes:
             seen_hashes.add(text_hash)
             unique_reviews.append(review)
-    
+
     return unique_reviews
 
 
 def normalize_rating(rating_value) -> Optional[float]:
     if pd.isna(rating_value) or rating_value is None:
         return None
-    
+
     try:
         rating_str = str(rating_value).strip()
-        
+
         if '/5' in rating_str:
             rating_str = rating_str.split('/')[0]
-        
+
         rating_str = rating_str.replace('out of 5', '').strip()
-        
+
         rating_float = float(rating_str)
-        
+
         if rating_float <= 5:
             return round(rating_float, 2)
         elif rating_float <= 10:
             return round(rating_float / 2, 2)
         elif rating_float <= 100:
             return round(rating_float / 20, 2)
-        
+
         return None
     except (ValueError, TypeError):
         return None
@@ -136,7 +136,7 @@ def generate_stable_hash(text: str, length: int = 8) -> str:
 def filter_by_restaurant(df: pd.DataFrame, restaurant_name: str, name_column: str) -> pd.DataFrame:
     if name_column not in df.columns:
         return pd.DataFrame()
-    
+
     return df[df[name_column].astype(str).str.contains(
         restaurant_name, case=False, na=False, regex=False
     )]

@@ -12,12 +12,12 @@ class SimpleCache:
         self.default_timeout = default_timeout
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
-    
+
     def _make_key(self, key):
         if isinstance(key, str):
             return hashlib.md5(key.encode()).hexdigest()
         return hashlib.md5(str(key).encode()).hexdigest()
-    
+
     def get(self, key):
         cache_key = self._make_key(key)
         if cache_key in self._cache:
@@ -27,21 +27,21 @@ class SimpleCache:
             else:
                 del self._cache[cache_key]
         return None
-    
+
     def set(self, key, value, timeout=None):
         cache_key = self._make_key(key)
         timeout = timeout or self.default_timeout
         expires_at = datetime.now() + timedelta(seconds=timeout)
         self._cache[cache_key] = (value, expires_at)
-    
+
     def delete(self, key):
         cache_key = self._make_key(key)
         if cache_key in self._cache:
             del self._cache[cache_key]
-    
+
     def clear(self):
         self._cache.clear()
-    
+
     def get_or_set(self, key, callback, timeout=None):
         value = self.get(key)
         if value is not None:
