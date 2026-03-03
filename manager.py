@@ -34,13 +34,28 @@ MAX_GOOGLE_FAILURES = 10
 
 
 
-def build_or_get_rag(reviews_texts, docs_texts=None):
+def build_or_get_rag(reviews_texts, restaurant_name, docs_texts=None):
+    """Build consolidated RAG instance. All restaurants share one vector store."""
     rag = RAGChat()
+    rag.current_restaurant = restaurant_name
+    
+    # Load consolidated store if it exists
+    if not rag._load_vector_db():
+        logger.info("Creating consolidated vector store")
+    
+    # Check if this restaurant already has vectors
+    if rag._restaurant_has_vectors(restaurant_name):
+        logger.info(f"Consolidated store already has vectors for '{restaurant_name}'")
+    else:
+        logger.info(f"Adding embeddings for '{restaurant_name}' to consolidated store")
+    
     combined = list(reviews_texts)
     if docs_texts:
         combined.extend(docs_texts)
     if combined:
         rag.index_documents(combined)
+    
+    rag.loaded = True
     return rag
 def fetch_image_from_google_places(restaurant_name, api_key):
     try:
@@ -72,9 +87,6 @@ def fetch_image_from_web_search(restaurant_name):
     try:
         import requests
         from bs4 import BeautifulSoup
-        search_urls = [
-            f"https://www.google.com/search?tbm=isch&q={restaurant_name}+restaurant",
-        ]
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
@@ -86,7 +98,7 @@ def fetch_image_from_web_search(restaurant_name):
             if img_tags:
                 for img in img_tags:
                     src = img.get('src') or img.get('data-src')
-                    if src and 'http' in src and '.jpg' in src.lower() or '.png' in src.lower():
+                    if src and 'http' in src and ('.jpg' in src.lower() or '.jpeg' in src.lower() or '.png' in src.lower()):
                         logger.info(f"✓ Found web image for {restaurant_name}")
                         return src
         except Exception as e:
@@ -132,9 +144,9 @@ def fetch_image_from_unsplash(restaurant_name):
         logger.debug(f"Unsplash error for {restaurant_name}: {e}")
         return None
 def generate_placeholder_image(restaurant_name):
-    hash_value = sum(ord(c) * (i + 1) for i, c in enumerate(restaurant_name))
-    unique_id = hash_value % 10000
-    return f"https://source.unsplash.com/800x600/?restaurant,food&sig={unique_id}"
+    name = (restaurant_name or "restaurant").strip().lower()
+    lock = (sum(ord(char) for char in name) % 10000) + 1
+    return f"https://loremflickr.com/800/600/restaurant,food,dining?lock={lock}"
 
 @memoize
 def get_restaurant_image(restaurant_name, api_key=None):
@@ -395,9 +407,7 @@ def register_manager_routes(app, db, User, Review, manager_required, login_requi
         """
         Full-featured dashboard for managers
 
-        Performance note: Uses placeholder images for fast loading.
-        Real images can be fetched via lazy loading in frontend or by
-        calling get_restaurant_image(name, GOOGLE_PLACES_API_KEY) if needed.
+        Dashboard for managers with restaurant-specific images.
         """
         try:
             _, restaurants_data = process_all_datasets(DATASET_FOLDER, restaurant_filter=None)
@@ -405,7 +415,6 @@ def register_manager_routes(app, db, User, Review, manager_required, login_requi
             for r in restaurants_data:
                 name = r['name']
                 if name not in unique_restaurants:
-
                     r['photo'] = generate_placeholder_image(name)
                     unique_restaurants[name] = r
             restaurants = list(unique_restaurants.values())
@@ -574,7 +583,7 @@ def register_manager_routes(app, db, User, Review, manager_required, login_requi
                     logger.warning(f"Could not read document {p}: {doc_error}")
             global rag_instance, current_indexed_restaurant
             try:
-                rag_instance = build_or_get_rag(reviews_texts, docs_texts)
+                rag_instance = build_or_get_rag(reviews_texts, restaurant, docs_texts)
                 current_indexed_restaurant = restaurant
                 logger.info(f"RAG instance initialized for {restaurant}")
             except Exception as rag_error:
@@ -702,3 +711,71 @@ def register_manager_routes(app, db, User, Review, manager_required, login_requi
             'google_api_enabled': use_google_api,
             'google_api_failures': google_api_failures,
         })
+
+    @app.route("/api/vector-cache-status")
+    @manager_required
+    def vector_cache_status():
+        """Check consolidated vector store and restaurants with cached vectors - Manager only"""
+        try:
+            rag = RAGChat()
+            if not rag._load_vector_db():
+                return jsonify({
+                    'success': True,
+                    'total_vectors': 0,
+                    'restaurants': [],
+                    'message': 'No consolidated vector store yet. Build it by analyzing restaurants.'
+                })
+            
+            # Get list of unique restaurants in consolidated store
+            restaurants = set()
+            for meta in rag.doc_metadata:
+                rest = meta.get('restaurant', 'Unknown')
+                if rest:
+                    restaurants.add(rest)
+            
+            restaurant_list = sorted(list(restaurants))
+            counts = {}
+            for meta in rag.doc_metadata:
+                rest = meta.get('restaurant', 'Unknown')
+                counts[rest] = counts.get(rest, 0) + 1
+            
+            return jsonify({
+                'success': True,
+                'total_vectors': rag.faiss_index.ntotal if rag.faiss_index else 0,
+                'restaurant_count': len(restaurants),
+                'restaurants': [{'name': r, 'vectors': counts.get(r, 0)} for r in restaurant_list]
+            })
+        except Exception as e:
+            logger.error(f"Error checking vector cache: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+
+    @app.route("/api/clear-vector-cache", methods=["DELETE"])
+    @manager_required
+    def clear_vector_cache():
+        """Clear entire consolidated vector store - Manager only"""
+        try:
+            rag = RAGChat()
+            paths = rag._get_vector_db_path()
+            
+            deleted = False
+            if os.path.exists(paths['index']):
+                os.remove(paths['index'])
+                deleted = True
+            if os.path.exists(paths['metadata']):
+                os.remove(paths['metadata'])
+                deleted = True
+            
+            if deleted:
+                logger.info("Cleared consolidated vector cache")
+                return jsonify({
+                    'success': True,
+                    'message': "Consolidated vector store cleared. All restaurants will rebuild on next analysis."
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': "No consolidated vector store found"
+                }), 404
+        except Exception as e:
+            logger.error(f"Error clearing vector cache: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
