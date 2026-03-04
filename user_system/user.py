@@ -709,6 +709,93 @@ def register_user_routes(app, Review, login_required):
         flash(f"AI booking completed: {booking_result['booking_id']}", "success")
         return redirect(url_for("user_dashboard"))
 
+    @app.route("/user/restaurant/<restaurant_name>")
+    @login_required
+    def restaurant_details(restaurant_name):
+        """Display detailed restaurant information with reviews, menu, and booking options."""
+        # Load all restaurants
+        restaurants, _ = _load_user_restaurant_catalog(app.config["DATASET_FOLDER"], Review)
+        
+        # Find the selected restaurant
+        restaurant = None
+        for r in restaurants:
+            if r["name"].lower() == restaurant_name.lower():
+                restaurant = r
+                break
+        
+        if not restaurant:
+            flash("Restaurant not found.", "warning")
+            return redirect(url_for("user_dashboard"))
+        
+        # Load reviews for this restaurant
+        from sqlalchemy import desc
+        reviews = Review.query.filter_by(restaurant=restaurant_name).order_by(desc(Review.created_at)).limit(20).all()
+        
+        # Generate sample menu items based on cuisine
+        menu_items = _generate_sample_menu(restaurant["cuisines"])
+        
+        return render_template(
+            "restaurant_details.html",
+            restaurant=restaurant,
+            reviews=reviews,
+            menu_items=menu_items,
+        )
+
+
+def _generate_sample_menu(cuisines_str):
+    """Generate sample menu items based on cuisine type."""
+    menu_samples = {
+        "indian": [
+            {"name": "Butter Chicken", "description": "Tender chicken in creamy tomato sauce", "price": 350},
+            {"name": "Biryani", "description": "Fragrant rice with spiced meat", "price": 250},
+            {"name": "Paneer Tikka", "description": "Grilled cottage cheese with spices", "price": 280},
+            {"name": "Dal Makhani", "description": "Creamy lentil curry", "price": 220},
+            {"name": "Naan", "description": "Traditional Indian bread", "price": 50},
+        ],
+        "chinese": [
+            {"name": "Kung Pao Chicken", "description": "Stir-fried chicken with peanuts", "price": 320},
+            {"name": "Hakka Noodles", "description": "Indo-Chinese noodles", "price": 180},
+            {"name": "Gobi Manchurian", "description": "Fried cauliflower in tangy sauce", "price": 240},
+            {"name": "Fried Rice", "description": "Egg or vegetable fried rice", "price": 160},
+        ],
+        "italian": [
+            {"name": "Pasta Alfredo", "description": "Creamy pasta with parmesan", "price": 380},
+            {"name": "Margherita Pizza", "description": "Fresh mozzarella and basil", "price": 320},
+            {"name": "Risotto", "description": "Creamy Italian rice", "price": 340},
+            {"name": "Carbonara", "description": "Pasta with bacon and cream", "price": 360},
+        ],
+        "mexican": [
+            {"name": "Tacos", "description": "Soft tortillas with filling", "price": 280},
+            {"name": "Burrito", "description": "Wrapped tortilla with rice and beans", "price": 300},
+            {"name": "Quesadilla", "description": "Grilled tortilla with cheese", "price": 250},
+        ],
+        "thai": [
+            {"name": "Pad Thai", "description": "Stir-fried rice noodles", "price": 280},
+            {"name": "Green Curry", "description": "Spicy green curry with vegetables", "price": 320},
+            {"name": "Tom Yum Soup", "description": "Spicy and tangy soup", "price": 200},
+        ],
+    }
+    
+    # Extract cuisine types from string
+    cuisines = [c.strip().lower() for c in cuisines_str.split(",") if c.strip()]
+    
+    # Get menu items for matching cuisines
+    menu = []
+    for cuisine in cuisines:
+        if cuisine in menu_samples:
+            menu.extend(menu_samples[cuisine])
+    
+    # If no exact match, return a generic menu
+    if not menu:
+        menu = [
+            {"name": "Signature Dish", "description": "Chef's special recommendation", "price": 350},
+            {"name": "Appetizer Platter", "description": "Assorted starters", "price": 280},
+            {"name": "Main Course", "description": "House specialty", "price": 400},
+            {"name": "Dessert", "description": "Sweet treat", "price": 150},
+        ]
+    
+    return menu[:8]  # Return max 8 items
+
 
 # Example usage and testing
 if __name__ == "__main__":

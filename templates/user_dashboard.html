@@ -186,11 +186,15 @@
     width: 100%;
     transition: all 0.3s ease;
     cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
   }
 
   .view-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(20, 184, 166, 0.4);
+    color: white;
   }
 
   .info-box {
@@ -372,10 +376,10 @@
       </div>
       {% endif %}
 
-      <button type="button" class="view-btn" disabled>
+      <a href="{{ url_for('restaurant_details', restaurant_name=restaurant.name) }}" class="view-btn" style="display: block; text-align: center; text-decoration: none;">
         <i class="fas fa-circle-info me-2"></i>
-        Details shown on this page
-      </button>
+        View Full Details
+      </a>
     </div>
   </div>
   {% endfor %}

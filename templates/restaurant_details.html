@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .details-hero {
+    position: relative;
+    height: 300px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .details-hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.7) 0%, rgba(14, 165, 233, 0.7) 100%);
+  }
+
+  .hero-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2rem;
+    color: white;
+    z-index: 1;
+  }
+
+  .back-button {
+    display: inline-block;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .back-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: white;
+  }
+
+  .restaurant-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+
+  .restaurant-meta {
+    display: flex;
+    gap: 2rem;
+    font-size: 1rem;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .info-section {
+    background: rgba(17, 28, 47, 0.95);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .tabs-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    overflow-x: auto;
+  }
+
+  .tab-button {
+    padding: 1rem 2rem;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-weight: 600;
+    position: relative;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+  }
+
+  .tab-button:hover {
+    color: #e2e8f0;
+  }
+
+  .tab-button.active {
+    color: #14b8a6;
+  }
+
+  .tab-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%);
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .review-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .review-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #14b8a6;
+  }
+
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .review-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #f59e0b;
+    font-weight: 600;
+  }
+
+  .review-text {
+    color: #cbd5e1;
+    line-height: 1.6;
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .menu-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #14b8a6;
+    transform: translateY(-3px);
+  }
+
+  .dish-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 0.5rem;
+  }
+
+  .dish-price {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #14b8a6;
+    margin-bottom: 1rem;
+  }
+
+  .booking-form {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    color: #e2e8f0;
+    font-size: 1rem;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #14b8a6;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .form-group input::placeholder {
+    color: #64748b;
+  }
+
+  .submit-button {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .submit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(20, 184, 166, 0.4);
+  }
+
+  .no-reviews {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+  }
+
+  .no-reviews i {
+    font-size: 3rem;
+    color: #475569;
+    margin-bottom: 1rem;
+  }
+
+  .restaurant-quick-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .quick-info-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .quick-info-label {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .quick-info-value {
+    color: #e2e8f0;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+</style>
+
+<a href="{{ url_for('user_dashboard') }}" class="back-button">
+  <i class="fas fa-arrow-left"></i> Back to Dashboard
+</a>
+
+<div class="details-hero" style="background-image: url('{{ restaurant.photo }}')">
+  <div class="hero-content">
+    <h1 class="restaurant-title">{{ restaurant.name }}</h1>
+    <div class="restaurant-meta">
+      {% if restaurant.rating and restaurant.rating != 'N/A' %}
+      <div class="meta-item">
+        <i class="fas fa-star" style="color: #f59e0b;"></i>
+        <span>{{ restaurant.rating }} Rating</span>
+      </div>
+      {% endif %}
+      {% if restaurant.cuisines %}
+      <div class="meta-item">
+        <i class="fas fa-bowl-food"></i>
+        <span>{{ restaurant.cuisines }}</span>
+      </div>
+      {% endif %}
+      {% if restaurant.review_count is defined %}
+      <div class="meta-item">
+        <i class="fas fa-comment-dots"></i>
+        <span>{{ restaurant.review_count }} Reviews</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="info-section">
+  <h2 style="color: #e2e8f0; margin-bottom: 1.5rem;">
+    <i class="fas fa-info-circle"></i> Quick Info
+  </h2>
+  
+  <div class="restaurant-quick-info">
+    {% if restaurant.price %}
+    <div class="quick-info-card">
+      <div class="quick-info-label">Price Range</div>
+      <div class="quick-info-value">{{ restaurant.price }}</div>
+    </div>
+    {% endif %}
+    
+    {% if restaurant.cuisines %}
+    <div class="quick-info-card">
+      <div class="quick-info-label">Cuisines</div>
+      <div class="quick-info-value" style="font-size: 1rem;">{{ restaurant.cuisines }}</div>
+    </div>
+    {% endif %}
+    
+    {% if restaurant.rating and restaurant.rating != 'N/A' %}
+    <div class="quick-info-card">
+      <div class="quick-info-label">Average Rating</div>
+      <div class="quick-info-value">
+        <i class="fas fa-star" style="color: #f59e0b;"></i> {{ restaurant.rating }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="info-section">
+  <div class="tabs-container">
+    <button class="tab-button active" onclick="switchTab(event, 'reviews')">
+      <i class="fas fa-comment-dots"></i> Reviews
+    </button>
+    <button class="tab-button" onclick="switchTab(event, 'menu')">
+      <i class="fas fa-utensils"></i> Menu
+    </button>
+    <button class="tab-button" onclick="switchTab(event, 'booking')">
+      <i class="fas fa-calendar"></i> Book Table
+    </button>
+    <button class="tab-button" onclick="switchTab(event, 'order')">
+      <i class="fas fa-shopping-cart"></i> Order Online
+    </button>
+  </div>
+
+  <!-- Reviews Tab -->
+  <div id="reviews" class="tab-content active">
+    <h3 style="color: #e2e8f0; margin-bottom: 1.5rem;">Customer Reviews</h3>
+    
+    {% if reviews and reviews|length > 0 %}
+    <div class="reviews-list">
+      {% for review in reviews %}
+      <div class="review-item">
+        <div class="review-header">
+          <span style="color: #cbd5e1; font-weight: 600;">{{ review.reviewer or 'Anonymous' }}</span>
+          {% if review.rating %}
+          <div class="review-rating">
+            {% for i in range(5) %}
+              {% if i < review.rating|int %}
+              <i class="fas fa-star"></i>
+              {% else %}
+              <i class="far fa-star"></i>
+              {% endif %}
+            {% endfor %}
+            <span>({{ review.rating }})</span>
+          </div>
+          {% endif %}
+        </div>
+        <p class="review-text">{{ review.text[:300] }}{% if review.text|length > 300 %}...{% endif %}</p>
+        <small style="color: #64748b;">{{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Recently' }}</small>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-reviews">
+      <i class="fas fa-star"></i>
+      <h4 style="color: #e2e8f0;">No Reviews Yet</h4>
+      <p>Be the first to review this restaurant!</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Menu Tab -->
+  <div id="menu" class="tab-content">
+    <h3 style="color: #e2e8f0; margin-bottom: 1.5rem;">Menu & Pricing</h3>
+    
+    <div class="menu-grid">
+      {% if menu_items and menu_items|length > 0 %}
+        {% for item in menu_items %}
+        <div class="menu-item">
+          <div class="dish-name">{{ item.name }}</div>
+          {% if item.description %}
+          <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">{{ item.description }}</p>
+          {% endif %}
+          <div class="dish-price">₹{{ item.price }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 2rem; color: #64748b;">
+        <i class="fas fa-utensils" style="font-size: 3rem; color: #475569; display: block; margin-bottom: 1rem;"></i>
+        <p>Menu details will be available soon. Please check back later!</p>
+        {% if restaurant.price %}
+        <p style="margin-top: 1rem;">Expected price range: <strong style="color: #14b8a6;">{{ restaurant.price }}</strong></p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Booking Tab -->
+  <div id="booking" class="tab-content">
+    <h3 style="color: #e2e8f0; margin-bottom: 1.5rem;">Book a Table</h3>
+    
+    <form method="POST" action="{{ url_for('user_auto_booking') }}" class="booking-form">
+      <input type="hidden" name="restaurant_name" value="{{ restaurant.name }}">
+      <input type="hidden" name="service_mode" value="restaurant">
+      
+      <div class="form-group">
+        <label for="party_size">Party Size</label>
+        <select id="party_size" name="party_size" required>
+          <option value="">Select number of guests</option>
+          <option value="1">1 Guest</option>
+          <option value="2" selected>2 Guests</option>
+          <option value="3">3 Guests</option>
+          <option value="4">4 Guests</option>
+          <option value="5">5 Guests</option>
+          <option value="6">6 Guests</option>
+          <option value="8">8 Guests</option>
+          <option value="10">10 Guests</option>
+          <option value="15">15 Guests</option>
+          <option value="20">20 Guests</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="preferred_time">Preferred Time</label>
+        <input type="time" id="preferred_time" name="preferred_time" value="19:00" required>
+      </div>
+
+      <div class="form-group">
+        <label for="note">Special Requests (Optional)</label>
+        <input type="text" id="note" name="note" placeholder="e.g., Window seat, celebration, allergies...">
+      </div>
+
+      <button type="submit" class="submit-button">
+        <i class="fas fa-check-circle"></i> Confirm Booking
+      </button>
+    </form>
+
+    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(20, 184, 166, 0.1); border: 1px solid rgba(20, 184, 166, 0.3); border-radius: 1rem;">
+      <i class="fas fa-info-circle" style="color: #14b8a6; margin-right: 0.5rem;"></i>
+      <span style="color: #cbd5e1;">Our AI system will confirm your booking instantly. You'll receive confirmation with booking ID and details.</span>
+    </div>
+  </div>
+
+  <!-- Order Online Tab -->
+  <div id="order" class="tab-content">
+    <h3 style="color: #e2e8f0; margin-bottom: 1.5rem;">Order Online</h3>
+    
+    <form method="POST" action="{{ url_for('user_auto_booking') }}" class="booking-form">
+      <input type="hidden" name="restaurant_name" value="{{ restaurant.name }}">
+      <input type="hidden" name="service_mode" value="home_delivery">
+      
+      <div class="form-group">
+        <label for="delivery_address">Delivery Address</label>
+        <input type="text" id="delivery_address" name="delivery_address" placeholder="Enter your delivery address" required>
+      </div>
+
+      <div class="form-group">
+        <label for="party_size_order">Order Size (Servings)</label>
+        <select id="party_size_order" name="party_size" required>
+          <option value="">Select servings</option>
+          <option value="1">1 Serving</option>
+          <option value="2" selected>2 Servings</option>
+          <option value="3">3 Servings</option>
+          <option value="4">4 Servings</option>
+          <option value="6">6 Servings</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="preferred_time_order">Preferred Delivery Time</label>
+        <input type="time" id="preferred_time_order" name="preferred_time" value="19:00" required>
+      </div>
+
+      <div class="form-group">
+        <label for="special_instructions">Special Instructions (Optional)</label>
+        <input type="text" id="special_instructions" name="note" placeholder="e.g., Extra spicy, no onions, allergies...">
+      </div>
+
+      <button type="submit" class="submit-button">
+        <i class="fas fa-shopping-cart"></i> Place Order
+      </button>
+    </form>
+
+    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(20, 184, 166, 0.1); border: 1px solid rgba(20, 184, 166, 0.3); border-radius: 1rem;">
+      <i class="fas fa-info-circle" style="color: #14b8a6; margin-right: 0.5rem;"></i>
+      <span style="color: #cbd5e1;">Our AI system will process your order instantly. You'll receive confirmation with delivery time estimation.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(event, tabName) {
+    event.preventDefault();
+    
+    // Hide all tab contents
+    const contents = document.querySelectorAll('.tab-content');
+    contents.forEach(content => content.classList.remove('active'));
+    
+    // Remove active class from all buttons
+    const buttons = document.querySelectorAll('.tab-button');
+    buttons.forEach(button => button.classList.remove('active'));
+    
+    // Show selected tab and mark button as active
+    document.getElementById(tabName).classList.add('active');
+    event.target.closest('button').classList.add('active');
+  }
+</script>
+
+{% endblock %}
