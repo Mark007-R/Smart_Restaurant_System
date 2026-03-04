@@ -12,7 +12,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 MANAGER_SYSTEM_DIR = BASE_DIR / "manager_system"
-BOOKING_SYSTEM_DIR = BASE_DIR / "booking_system"
+USER_SYSTEM_DIR = BASE_DIR / "user_system"
 
 if str(MANAGER_SYSTEM_DIR) not in sys.path:
     sys.path.insert(0, str(MANAGER_SYSTEM_DIR))
@@ -151,7 +151,7 @@ def start_manager():
 @app.route("/user/start")
 @login_required
 def start_user():
-    return launch_role_script(BOOKING_SYSTEM_DIR, "user.py")
+    return launch_role_script(USER_SYSTEM_DIR, "user.py")
 
 
 @app.route("/login", methods=["GET", "POST"])
