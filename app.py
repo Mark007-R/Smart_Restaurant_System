@@ -37,6 +37,10 @@ UPLOAD_FOLDER = MANAGER_SYSTEM_DIR / app.config.get("UPLOAD_FOLDER", "uploads")
 DATASET_FOLDER = BASE_DIR / app.config.get("DATASET_FOLDER", "datasets")
 VECTOR_DB_FOLDER = MANAGER_SYSTEM_DIR / app.config.get("VECTOR_DB_FOLDER", "vector_db")
 
+app.config["UPLOAD_FOLDER"] = str(UPLOAD_FOLDER)
+app.config["DATASET_FOLDER"] = str(DATASET_FOLDER)
+app.config["VECTOR_DB_FOLDER"] = str(VECTOR_DB_FOLDER)
+
 for folder in [UPLOAD_FOLDER, DATASET_FOLDER, VECTOR_DB_FOLDER]:
     folder.mkdir(parents=True, exist_ok=True)
 
