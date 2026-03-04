@@ -149,37 +149,6 @@ def start_user():
     return redirect(url_for("user_dashboard"))
 
 
-@app.route("/user/dashboard")
-@login_required
-def user_dashboard():
-    restaurants = []
-    seen = set()
-
-    for review in Review.query.order_by(Review.created_at.desc()).all():
-        name = (review.restaurant or "").strip()
-        if not name or name in seen:
-            continue
-        seen.add(name)
-        restaurants.append(
-            {
-                "name": name,
-                "rating": f"{review.rating:.1f}" if review.rating is not None else "N/A",
-                "address": "Address not available",
-                "photo": "https://loremflickr.com/800/600/restaurant,food,dining",
-            }
-        )
-        if len(restaurants) >= 50:
-            break
-
-    total_reviews = Review.query.count()
-    return render_template(
-        "user_dashboard.html",
-        restaurants=restaurants,
-        total_restaurants=len(restaurants),
-        total_reviews=total_reviews,
-    )
-
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if "user_id" in session:
@@ -288,7 +257,9 @@ def logout():
 
 
 from manager_system.manager import register_manager_routes
+from user_system.user import register_user_routes
 
+register_user_routes(app, Review, login_required)
 register_manager_routes(app, db, User, Review, manager_required, login_required)
 
 
