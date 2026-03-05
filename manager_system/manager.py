@@ -264,7 +264,7 @@ def process_resreviews_csv(filepath, restaurant_filter=None):
                 })
         return reviews, restaurants_data
     except Exception as e:
-        print(f"Error processing Resreviews.csv: {e}")
+        logger.error(f"Error processing Resreviews.csv: {e}")
         return [], []
 def process_reviews_csv(filepath, restaurant_filter=None):
     try:
@@ -295,7 +295,7 @@ def process_reviews_csv(filepath, restaurant_filter=None):
                 })
         return reviews, restaurants_data
     except Exception as e:
-        print(f"Error processing reviews.csv: {e}")
+        logger.error(f"Error processing reviews.csv: {e}")
         return [], []
 
 def process_zomato_csv(filepath, restaurant_filter=None):
@@ -332,7 +332,7 @@ def process_zomato_csv(filepath, restaurant_filter=None):
                 })
         return reviews, restaurants_data
     except Exception as e:
-        print(f"Error processing zomato.csv: {e}")
+        logger.error(f"Error processing zomato.csv: {e}")
         return [], []
 def process_zomato2_csv(filepath, restaurant_filter=None):
     try:
@@ -370,7 +370,7 @@ def process_zomato2_csv(filepath, restaurant_filter=None):
                 })
         return reviews, restaurants_data
     except Exception as e:
-        print(f"Error processing zomato2.csv: {e}")
+        logger.error(f"Error processing zomato2.csv: {e}")
         return [], []
 
 @memoize
@@ -392,9 +392,9 @@ def process_all_datasets(dataset_folder, restaurant_filter=None):
                 all_reviews.extend(reviews)
                 all_restaurants.extend(restaurants)
                 if restaurant_filter and reviews:
-                    print(f"✓ Found {len(reviews)} reviews in {filename}")
+                    logger.info(f"Found {len(reviews)} reviews in {filename}")
             except Exception as e:
-                print(f"Error processing {filename}: {e}")
+                logger.error(f"Error processing {filename}: {e}")
     return all_reviews, all_restaurants
 
 

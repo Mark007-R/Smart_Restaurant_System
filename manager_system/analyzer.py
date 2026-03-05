@@ -177,7 +177,7 @@ def get_restaurant_info(restaurant_name):
                     break
 
         except Exception as e:
-            print(f"Error reading {fname}: {e}")
+            logger.error(f"Error reading {fname}: {e}")
 
     return info
 
@@ -264,7 +264,7 @@ def generate_visualizations(reviews):
                                     kpi_metrics['location'] = str(row[loc_col])
                                     break
         except Exception as e:
-            print(f"Error loading {csv_file} for KPIs: {e}")
+            logger.error(f"Error loading {csv_file} for KPIs: {e}")
 
     images['kpi_metrics'] = kpi_metrics
     images['restaurant_info'] = restaurant_info
@@ -307,7 +307,7 @@ def generate_visualizations(reviews):
                         elif 'Rating' in df_rest.columns:
                             avg_ratings.extend(df_rest['Rating'].dropna().tolist())
         except Exception as e:
-            print(f"Error reading {csv_file}: {e}")
+            logger.error(f"Error reading {csv_file}: {e}")
 
     categories = [c.replace('_', ' ').title() for c in ratings_by_category.keys()]
     avg_scores = [np.mean(ratings_by_category[c]) if ratings_by_category[c] else 0
@@ -395,7 +395,7 @@ def generate_visualizations(reviews):
                                 }
                                 all_menu_items.append(item_data)
         except Exception as e:
-            print(f"Error reading menu from {csv_file}: {e}")
+            logger.error(f"Error reading menu from {csv_file}: {e}")
 
     if all_menu_items:
         menu_df = pd.DataFrame(all_menu_items)
@@ -682,7 +682,7 @@ def generate_visualizations(reviews):
                                 if pd.notna(rate_val) and table_val in ['Yes', 'No']:
                                     all_table_booking_data.append({'book_table': table_val, 'rating': rate_val})
         except Exception as e:
-            print(f"Error reading features from {csv_file}: {e}")
+            logger.error(f"Error reading features from {csv_file}: {e}")
 
     if all_online_order_data:
         try:
@@ -708,7 +708,7 @@ def generate_visualizations(reviews):
                     plt.tight_layout()
                     images['online_order_rating'] = plot_to_base64(fig)
         except Exception as e:
-            print(f"Error creating online order chart: {e}")
+            logger.error(f"Error creating online order chart: {e}")
 
     if all_table_booking_data:
         try:
@@ -734,7 +734,7 @@ def generate_visualizations(reviews):
                     plt.tight_layout()
                     images['table_booking_rating'] = plot_to_base64(fig)
         except Exception as e:
-            print(f"Error creating table booking chart: {e}")
+            logger.error(f"Error creating table booking chart: {e}")
 
     if all_cost_rating_data:
         try:
@@ -768,7 +768,7 @@ def generate_visualizations(reviews):
                 plt.tight_layout()
                 images['cost_distribution'] = plot_to_base64(fig)
         except Exception as e:
-            print(f"Error creating cost charts: {e}")
+            logger.error(f"Error creating cost charts: {e}")
 
     try:
         cuisine_list = []
@@ -819,7 +819,7 @@ def generate_visualizations(reviews):
             plt.tight_layout()
             images['cuisine_distribution'] = plot_to_base64(fig)
     except Exception as e:
-        print(f"Error creating cuisine charts: {e}")
+        logger.error(f"Error creating cuisine charts: {e}")
 
     try:
         location_branches = []
@@ -856,7 +856,7 @@ def generate_visualizations(reviews):
             plt.tight_layout()
             images['branch_distribution'] = plot_to_base64(fig)
     except Exception as e:
-        print(f"Error creating branch chart: {e}")
+        logger.error(f"Error creating branch chart: {e}")
 
     review_lengths = [len(r.text) if hasattr(r, 'text') and r.text else 0 for r in reviews]
     review_lengths = [l for l in review_lengths if l > 0]
@@ -970,7 +970,7 @@ def generate_visualizations(reviews):
                 plt.tight_layout()
                 images['correlation_heatmap'] = plot_to_base64(fig)
     except Exception as e:
-        print(f"Error creating correlation heatmap: {e}")
+        logger.error(f"Error creating correlation heatmap: {e}")
 
     all_rated_items = []
     for csv_file in ['zomato2.csv', 'zomato.csv', 'mumbaires.csv']:
@@ -1020,7 +1020,7 @@ def generate_visualizations(reviews):
                                         'bestseller': str(row[bestseller_col]) if bestseller_col and pd.notna(row[bestseller_col]) else 'No'
                                     })
         except Exception as e:
-            print(f"Error reading rated items from {csv_file}: {e}")
+            logger.error(f"Error reading rated items from {csv_file}: {e}")
 
     if all_rated_items:
         items_df = pd.DataFrame(all_rated_items)
@@ -1155,7 +1155,7 @@ def get_reviews_from_datasets(restaurant_name):
                             })
 
         except Exception as e:
-            print(f"Error reading {fname}: {e}")
+            logger.error(f"Error reading {fname}: {e}")
 
     return all_reviews
 

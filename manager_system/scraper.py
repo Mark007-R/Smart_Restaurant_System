@@ -1,10 +1,13 @@
 import time
 import random
 import re
+import logging
 import requests
 from urllib.parse import quote_plus, urlparse
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+logger = logging.getLogger(__name__)
 
 HEADERS_LIST = [
     {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
@@ -155,7 +158,7 @@ def scrape_single_url(url, restaurant_name, timeout=10):
                     })
 
     except Exception as e:
-        print(f"  ⚠️  Error scraping {urlparse(url).netloc}: {str(e)[:50]}")
+        logger.error(f"Error scraping {urlparse(url).netloc}: {str(e)[:50]}")
 
     return results
 
@@ -167,11 +170,11 @@ def scrape_generic_reviews(restaurant_name, max_reviews=20):
         query = f"{restaurant_name} restaurant customer reviews Mumbai"
         url = "https://html.duckduckgo.com/html/"
 
-        print(f"🌐 Web scraping: Searching for '{restaurant_name}'...")
+        logger.info(f"Web scraping: Searching for '{restaurant_name}'...")
 
         response = requests.post(url, data={"q": query}, headers=get_headers(), timeout=10)
         if response.status_code != 200:
-            print(f"⚠️  Web search failed with status {response.status_code}")
+            logger.warning(f"Web search failed with status {response.status_code}")
             return []
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -184,7 +187,7 @@ def scrape_generic_reviews(restaurant_name, max_reviews=20):
             and not any(x in l.lower() for x in ["facebook", "twitter", "instagram", "ad"])
         ][:12]
 
-        print(f"📍 Found {len(review_links)} potential sources")
+        logger.info(f"Found {len(review_links)} potential sources")
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             future_to_url = {
@@ -207,21 +210,21 @@ def scrape_generic_reviews(restaurant_name, max_reviews=20):
                             if len(results) >= max_reviews:
                                 break
 
-                    print(f"  ✓ Processed {i}/{len(review_links)} sources ({len(results)} reviews found)")
+                    logger.info(f"Processed {i}/{len(review_links)} sources ({len(results)} reviews found)")
 
                 except Exception as e:
-                    print(f"  ⚠️  Error: {str(e)[:50]}")
+                    logger.error(f"Error: {str(e)[:50]}")
 
                 if len(results) >= max_reviews:
                     break
 
     except Exception as e:
-        print(f"❌ Generic scraping error: {e}")
+        logger.error(f"Generic scraping error: {e}")
         return []
 
     results.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
 
-    print(f"✅ Scraped {len(results)} quality reviews from web")
+    logger.info(f"Scraped {len(results)} quality reviews from web")
     return results[:max_reviews]
 
 def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
@@ -229,7 +232,7 @@ def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
     seen = set()
 
     try:
-        print(f"🔍 Attempting Zomato search for '{restaurant_name}'...")
+        logger.info(f"Attempting Zomato search for '{restaurant_name}'...")
 
         base = "https://www.zomato.com"
         search_url = base + "/mumbai/search?q=" + quote_plus(restaurant_name)
@@ -237,7 +240,7 @@ def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
         response = requests.get(search_url, headers=get_headers(), timeout=10)
 
         if response.status_code != 200:
-            print(f"⚠️  Zomato search returned status {response.status_code}")
+            logger.warning(f"Zomato search returned status {response.status_code}")
             return results
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -268,11 +271,11 @@ def scrape_zomato_placeholder(restaurant_name, max_reviews=10):
                     })
 
         if results:
-            print(f"✅ Found {len(results)} potential reviews on Zomato")
+            logger.info(f"Found {len(results)} potential reviews on Zomato")
         else:
-            print("⚠️  No reviews extracted from Zomato (likely dynamic content)")
+            logger.warning("No reviews extracted from Zomato (likely dynamic content)")
 
     except Exception as e:
-        print(f"⚠️  Zomato scraping error: {e}")
+        logger.error(f"Zomato scraping error: {e}")
 
     return results

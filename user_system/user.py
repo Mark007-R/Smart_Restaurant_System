@@ -16,6 +16,9 @@ import pandas as pd
 from flask import render_template, request, session, flash, redirect, url_for
 
 
+logger = logging.getLogger(__name__)
+
+
 class UserRole(Enum):
     """User role enumeration"""
     CUSTOMER = "customer"
@@ -470,11 +473,8 @@ class UserManager:
             self.username_index[user.username] = user.user_id
             return user
         except Exception as e:
-            print(f"Error loading user: {e}")
+            logger.error(f"Error loading user: {e}")
             return None
-
-
-logger = logging.getLogger(__name__)
 
 
 def _safe_float(value):
@@ -819,11 +819,11 @@ if __name__ == "__main__":
     )
     
     if success:
-        print(f"✓ User created: {user.username} ({user.user_id})")
-        print(f"  Email: {user.email}")
-        print(f"  Preferences: {user.preferences.to_dict()}")
+        logger.info(f"User created: {user.username} ({user.user_id})")
+        logger.info(f"Email: {user.email}")
+        logger.info(f"Preferences: {user.preferences.to_dict()}")
     else:
-        print(f"✗ Error: {msg}")
+        logger.error(f"Error: {msg}")
     
     # Authenticate user
     success, msg, authenticated_user = manager.authenticate_user(
@@ -832,15 +832,15 @@ if __name__ == "__main__":
     )
     
     if success:
-        print(f"\n✓ Authentication successful for {authenticated_user.username}")
-        print(f"  Last login: {authenticated_user.last_login}")
+        logger.info(f"Authentication successful for {authenticated_user.username}")
+        logger.info(f"Last login: {authenticated_user.last_login}")
     else:
-        print(f"\n✗ Authentication failed: {msg}")
+        logger.error(f"Authentication failed: {msg}")
     
     # Create session
     session_id = manager.create_session(user.user_id)
-    print(f"\n✓ Session created: {session_id}")
+    logger.info(f"Session created: {session_id}")
     
     # Verify session
     verified_user_id = manager.verify_session(session_id)
-    print(f"✓ Session verified for user: {verified_user_id}")
+    logger.info(f"Session verified for user: {verified_user_id}")

@@ -45,13 +45,13 @@ class RAGChat:
 
     def _initialize_model(self):
         try:
-            print("🔄 Loading embedding model...")
+            logger.info("Loading embedding model...")
             self.model = SentenceTransformer('all-MiniLM-L6-v2')
             self.embedding_dimension = self.model.get_sentence_embedding_dimension()
-            print(f"✅ Model loaded! Embedding dimension: {self.embedding_dimension}")
+            logger.info(f"Model loaded! Embedding dimension: {self.embedding_dimension}")
         except Exception as e:
-            print(f"⚠️  Error loading model: {e}")
-            print("Install sentence-transformers: pip install sentence-transformers")
+            logger.error(f"Error loading model: {e}")
+            logger.error("Install sentence-transformers: pip install sentence-transformers")
             self.model = None
 
     def list_cached_restaurants(self):
@@ -107,10 +107,10 @@ class RAGChat:
             with open(paths['metadata'], 'wb') as f:
                 pickle.dump(metadata, f)
 
-            print(f"💾 Consolidated vector DB: {self.faiss_index.ntotal} total vectors across all restaurants")
+            logger.info(f"Consolidated vector DB: {self.faiss_index.ntotal} total vectors across all restaurants")
             return True
         except Exception as e:
-            print(f"⚠️  Error saving vector DB: {e}")
+            logger.error(f"Error saving vector DB: {e}")
             return False
 
     def _load_vector_db(self):
@@ -133,10 +133,10 @@ class RAGChat:
             self.doc_metadata = metadata['doc_metadata']
             self.embedding_dimension = metadata['embedding_dimension']
 
-            print(f"✅ Loaded consolidated vector DB: {self.faiss_index.ntotal} total vectors")
+            logger.info(f"Loaded consolidated vector DB: {self.faiss_index.ntotal} total vectors")
             return True
         except Exception as e:
-            print(f"⚠️  Error loading vector DB: {e}")
+            logger.error(f"Error loading vector DB: {e}")
             return False
 
     def load_mumbaires_csv(self, filepath, restaurant_name=None):
@@ -162,7 +162,7 @@ class RAGChat:
                         'source': 'mumbaires.csv'
                     })
         except Exception as e:
-            print(f"Error loading mumbaires.csv: {e}")
+            logger.error(f"Error loading mumbaires.csv: {e}")
 
         return reviews
 
@@ -190,7 +190,7 @@ class RAGChat:
                         'source': 'Resreviews.csv'
                     })
         except Exception as e:
-            print(f"Error loading Resreviews.csv: {e}")
+            logger.error(f"Error loading Resreviews.csv: {e}")
 
         return reviews
 
@@ -218,7 +218,7 @@ class RAGChat:
                         'source': 'reviews.csv'
                     })
         except Exception as e:
-            print(f"Error loading reviews.csv: {e}")
+            logger.error(f"Error loading reviews.csv: {e}")
 
         return reviews
 
@@ -249,7 +249,7 @@ class RAGChat:
                         'source': 'zomato.csv'
                     })
         except Exception as e:
-            print(f"Error loading zomato.csv: {e}")
+            logger.error(f"Error loading zomato.csv: {e}")
 
         return reviews
 
@@ -285,7 +285,7 @@ class RAGChat:
                             'source': 'zomato2.csv'
                         })
         except Exception as e:
-            print(f"Error loading zomato2.csv: {e}")
+            logger.error(f"Error loading zomato2.csv: {e}")
 
         return reviews
 
@@ -293,7 +293,7 @@ class RAGChat:
         all_reviews = []
 
         if not os.path.exists(self.data_folder):
-            print(f"Dataset folder '{self.data_folder}' not found.")
+            logger.warning(f"Dataset folder '{self.data_folder}' not found.")
             return []
 
         dataset_loaders = {
@@ -311,10 +311,9 @@ class RAGChat:
                     reviews = loader_func(filepath, restaurant_name)
                     all_reviews.extend(reviews)
                     if restaurant_name and reviews:
-                        print(f"✓ Loaded {len(reviews)} reviews from {filename}")
-                except Exception as e:
-                    print(f"Error processing {filename}: {e}")
-
+                        logger.info(f"Loaded {len(reviews)} reviews from {filename}")
+                    except Exception as e:
+                        logger.error(f"Error processing {filename}: {e}")
         self.loaded = True
         self.current_restaurant = restaurant_name
         return all_reviews
@@ -322,18 +321,18 @@ class RAGChat:
     def index_documents(self, texts, metadata=None):
         """Add new document embeddings to consolidated store (append, don't replace)."""
         if self.model is None:
-            print("❌ Embedding model not loaded. Cannot create vectors.")
+            logger.error("Embedding model not loaded. Cannot create vectors.")
             return
 
         if not FAISS_AVAILABLE:
-            print("❌ FAISS not available. Install with: pip install faiss-cpu")
+            logger.error("FAISS not available. Install with: pip install faiss-cpu")
             return
 
         valid_indices = [i for i, t in enumerate(texts) if t and len(str(t)) > 20]
         new_texts = [texts[i] for i in valid_indices]
 
         if not new_texts:
-            print("No valid documents to index.")
+            logger.warning("No valid documents to index.")
             return
 
         # Load existing store if available
@@ -342,9 +341,9 @@ class RAGChat:
             self.faiss_index = faiss.IndexFlatIP(self.embedding_dimension)
             self.doc_texts = []
             self.doc_metadata = []
-            print("📝 Creating new consolidated vector store...")
+            logger.info("Creating new consolidated vector store...")
 
-        print(f"🔄 Creating embeddings for {len(new_texts)} new documents...")
+        logger.info(f"Creating embeddings for {len(new_texts)} new documents...")
 
         embeddings = self.model.encode(
             new_texts,
@@ -367,17 +366,17 @@ class RAGChat:
             for _ in new_texts:
                 self.doc_metadata.append({'restaurant': self.current_restaurant})
 
-        print(f"✅ Added {len(new_texts)} new vectors to consolidated store")
-        print(f"📊 Total vectors: {self.faiss_index.ntotal}")
-        print(f"📊 Vector dimension: {self.embedding_dimension}")
+        logger.info(f"Added {len(new_texts)} new vectors to consolidated store")
+        logger.info(f"Total vectors: {self.faiss_index.ntotal}")
+        logger.info(f"Vector dimension: {self.embedding_dimension}")
 
         # Always save to disk
         if self.current_restaurant:
             saved = self._save_vector_db()
             if saved:
-                print(f"💾 Consolidated store saved. Fast loading enabled.")
+                logger.info("Consolidated store saved. Fast loading enabled.")
         else:
-            print("⚠️  No restaurant name set. Vectors not persisted.")
+            logger.warning("No restaurant name set. Vectors not persisted.")
 
     def semantic_search(self, query, top_k=5, restaurant_filter=None):
         """Search consolidated store, optionally filtered by restaurant."""
@@ -418,35 +417,35 @@ class RAGChat:
             return results, score_list
 
         except Exception as e:
-            print(f"Error during semantic search: {e}")
+            logger.error(f"Error during semantic search: {e}")
             return [], []
 
     def answer_query(self, query, restaurant_name=None, top_k=5):
         # Load consolidated vector store once on first query
         if not self.loaded:
-            print(f"📥 Loading consolidated vector store...")
+            logger.info("Loading consolidated vector store...")
             if self._load_vector_db():
                 self.loaded = True
-                print(f"✅ Consolidated store loaded. {self.faiss_index.ntotal} vectors available.")
+                logger.info(f"Consolidated store loaded. {self.faiss_index.ntotal} vectors available.")
             else:
                 # First time: load data from CSVs if not already in database
-                print(f"📝 Building consolidated vector store from datasets...")
+                logger.info("Building consolidated vector store from datasets...")
                 # This will be built incrementally as restaurants are analyzed
                 self.loaded = True
         
         # If querying a new restaurant not yet analyzed, add its vectors
         if restaurant_name and not self._restaurant_has_vectors(restaurant_name):
-            print(f"📥 Adding vectors for '{restaurant_name}'...")
+            logger.info(f"Adding vectors for '{restaurant_name}'...")
             reviews = self.load_csv_data(restaurant_name)
             if reviews:
                 self.current_restaurant = restaurant_name
                 texts = [r['text'] for r in reviews]
                 self.index_documents(texts, metadata=reviews)
             else:
-                return f"❌ No reviews found for '{restaurant_name}' in the datasets.", []
+                return f"No reviews found for '{restaurant_name}' in the datasets.", []
 
         if self.faiss_index is None or self.model is None:
-            return "❌ No indexed reviews available. Please analyze the restaurant first.", []
+            return "No indexed reviews available. Please analyze the restaurant first.", []
 
         retrieved_docs, scores = self.semantic_search(query, top_k=top_k, restaurant_filter=restaurant_name)
 
@@ -496,16 +495,16 @@ class RAGChat:
                 break
 
         restaurant_phrase = f"**{restaurant_name}**" if restaurant_name else "this restaurant"
-        answer = f"💬 Based on {len(retrieved_docs)} relevant reviews about {restaurant_phrase}:\n\n"
+        answer = f"Based on {len(retrieved_docs)} relevant reviews about {restaurant_phrase}:\n\n"
 
-        answer += "**📋 Most Relevant Reviews:**\n"
+        answer += "Most Relevant Reviews:\n"
         for i, (doc, score) in enumerate(zip(retrieved_docs, scores), 1):
             text = doc['text']
             snippet = textwrap.shorten(text, width=180, placeholder="...")
 
             answer += f"\n**{i}.** {snippet}"
 
-        answer += "\n**🎯 AI Summary:**\n"
+        answer += "\nAI Summary:\n"
         summary = self._synthesize_intelligent_answer(
             query, retrieved_docs, detected_intent
         )
@@ -538,11 +537,11 @@ class RAGChat:
 
         if intent == 'quality':
             if pos_count > neg_count * 1.5:
-                summary = "✅ **Food quality is highly praised** by customers. "
+                summary = " Food quality is highly praised by customers. "
             elif pos_count > neg_count:
-                summary = "👍 **Generally good food quality** with some positive mentions. "
+                summary = " Generally good food quality with some positive mentions. "
             else:
-                summary = "⚠️ **Mixed reviews about food quality** - check specifics. "
+                summary = " Mixed reviews about food quality - check specifics. "
 
             if avg_rating:
                 summary += f"Average rating: **{avg_rating:.1f}/5**. "
@@ -550,56 +549,56 @@ class RAGChat:
 
         elif intent == 'service':
             if 'slow' in all_text or 'long wait' in all_text:
-                summary = "⏰ **Service speed is a concern** mentioned by multiple customers. "
+                summary = " Service speed is a concern mentioned by multiple customers. "
             elif 'rude' in all_text or 'unfriendly' in all_text:
-                summary = "😐 **Staff attitude needs improvement** according to reviews. "
+                summary = " Staff attitude needs improvement according to reviews. "
             elif pos_count > neg_count:
-                summary = "👏 **Service is appreciated** by most customers. "
+                summary = " Service is appreciated by most customers. "
             else:
-                summary = "⚠️ **Service quality varies** - mixed experiences reported. "
+                summary = " Service quality varies - mixed experiences reported. "
 
         elif intent == 'price':
             if 'expensive' in all_text or 'overpriced' in all_text:
-                summary = "💸 **Prices are on the higher side** as per customer feedback. "
+                summary = " Prices are on the higher side as per customer feedback. "
             elif 'value' in all_text and pos_count > neg_count:
-                summary = "💰 **Good value for money** mentioned by customers. "
+                summary = " Good value for money mentioned by customers. "
             else:
-                summary = "💵 **Pricing is considered reasonable** by most reviewers. "
+                summary = " Pricing is considered reasonable by most reviewers. "
 
         elif intent == 'hygiene':
             if neg_count > pos_count:
-                summary = "🚨 **Hygiene concerns raised** - cleanliness needs attention. "
+                summary = " Hygiene concerns raised - cleanliness needs attention. "
             else:
-                summary = "✨ **Cleanliness standards are maintained** well. "
+                summary = " Cleanliness standards are maintained well. "
 
         elif intent == 'ambience':
             if pos_count > neg_count:
-                summary = "🏪 **Good ambience and atmosphere** appreciated by visitors. "
+                summary = " Good ambience and atmosphere appreciated by visitors. "
             else:
-                summary = "🪑 **Ambience feedback is mixed** - personal preference varies. "
+                summary = " Ambience feedback is mixed - personal preference varies. "
 
         elif intent == 'recommend':
             sentiment_ratio = pos_count / (neg_count + 1)
 
             if sentiment_ratio > 2.0 and (avg_rating is None or avg_rating >= 4.0):
-                summary = "🌟 **HIGHLY RECOMMENDED!** Strong positive feedback across reviews. "
+                summary = " HIGHLY RECOMMENDED! Strong positive feedback across reviews. "
             elif sentiment_ratio > 1.2:
-                summary = "✅ **Generally Recommended** with mostly positive experiences. "
+                summary = " Generally Recommended with mostly positive experiences. "
             elif sentiment_ratio > 0.8:
-                summary = "⚖️ **Mixed Reviews** - read details before deciding. "
+                summary = " Mixed Reviews - read details before deciding. "
             else:
-                summary = "⚠️ **Caution Advised** - significant negative feedback present. "
+                summary = " Caution Advised - significant negative feedback present. "
 
             if avg_rating:
                 summary += f"\n   Overall Rating: **{avg_rating:.1f}/5**"
 
         else:
             if pos_count > neg_count * 1.5:
-                summary = "✅ **Overall positive sentiment** in reviews. "
+                summary = " Overall positive sentiment in reviews. "
             elif pos_count > neg_count:
-                summary = "👍 **Mostly positive feedback** with some concerns. "
+                summary = " Mostly positive feedback with some concerns. "
             else:
-                summary = "⚠️ **Mixed or negative feedback** - proceed with caution. "
+                summary = " Mixed or negative feedback - proceed with caution. "
 
             summary += f"\n   Frequently mentioned: {', '.join(key_terms[:6])}"
 
@@ -638,10 +637,10 @@ class RAGChat:
                     snippets.append(text)
 
             if not snippets:
-                return (f"❌ I couldn't find relevant information in the reviews or online "
-                       f"about '{query}' for {restaurant_name or 'this restaurant'}.")
+            return (f"I couldn't find relevant information in the reviews or online "
+                   f"about '{query}' for {restaurant_name or 'this restaurant'}.")
 
-            result = "🌐 **No matches in local reviews. Here's what I found online:**\n\n"
+            result = "Online Search Results:\n\n"
             for i, snippet in enumerate(snippets, 1):
                 shortened = textwrap.shorten(snippet, width=200, placeholder="...")
                 result += f"{i}. {shortened}\n\n"
@@ -649,5 +648,5 @@ class RAGChat:
             return result
 
         except Exception as e:
-            return (f"❌ Couldn't find information in local reviews. "
+            return (f"Couldn't find information in local reviews. "
                    f"Error searching online: {str(e)}")
