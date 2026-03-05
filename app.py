@@ -9,6 +9,7 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from flask_sqlalchemy import SQLAlchemy
 from jinja2 import ChoiceLoader, FileSystemLoader
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import Enum
 
 BASE_DIR = Path(__file__).resolve().parent
 MANAGER_SYSTEM_DIR = BASE_DIR / "manager_system"
@@ -52,11 +53,12 @@ for folder in [UPLOAD_FOLDER, DATASET_FOLDER, VECTOR_DB_FOLDER]:
 
 
 class User(db.Model):
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default="user")
+    role = db.Column(Enum('user', 'manager', name='user_role'), nullable=False, default='user')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
