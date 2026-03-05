@@ -388,8 +388,10 @@
     {% if restaurant.rating and restaurant.rating != 'N/A' %}
     <div class="quick-info-card">
       <div class="quick-info-label">Average Rating</div>
+      {% set rating_val = restaurant.rating|float %}
+      {% set rating_class = 'rating-red' if rating_val < 2.5 else 'rating-yellow' if rating_val < 3.7 else 'rating-green' %}
       <div class="quick-info-value">
-        <i class="fas fa-star" style="color: #f59e0b;"></i> {{ restaurant.rating }}
+        <i class="fas fa-star" style="color: #f59e0b;"></i> <span class="rating-badge {{ rating_class }}">{{ restaurant.rating }}</span>
       </div>
     </div>
     {% endif %}
