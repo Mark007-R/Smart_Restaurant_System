@@ -422,6 +422,36 @@
         border: 1px solid #86efac !important;
     }
 
+    .rating-badge-value i {
+        font-size: 0.85rem;
+    }
+
+    .rating-badge-value i[data-index="0"],
+    .rating-badge-value i[data-index="1"],
+    .rating-badge-value i[data-index="2"],
+    .rating-badge-value i[data-index="3"],
+    .rating-badge-value i[data-index="4"] {
+        opacity: 0.3;
+    }
+
+    .rating-badge-value i[data-rating="1"] ~ i[data-index="0"],
+    .rating-badge-value i[data-rating="2"] ~ i[data-index="0"],
+    .rating-badge-value i[data-rating="2"] ~ i[data-index="1"],
+    .rating-badge-value i[data-rating="3"] ~ i[data-index="0"],
+    .rating-badge-value i[data-rating="3"] ~ i[data-index="1"],
+    .rating-badge-value i[data-rating="3"] ~ i[data-index="2"],
+    .rating-badge-value i[data-rating="4"] ~ i[data-index="0"],
+    .rating-badge-value i[data-rating="4"] ~ i[data-index="1"],
+    .rating-badge-value i[data-rating="4"] ~ i[data-index="2"],
+    .rating-badge-value i[data-rating="4"] ~ i[data-index="3"],
+    .rating-badge-value i[data-rating="5"] ~ i[data-index="0"],
+    .rating-badge-value i[data-rating="5"] ~ i[data-index="1"],
+    .rating-badge-value i[data-rating="5"] ~ i[data-index="2"],
+    .rating-badge-value i[data-rating="5"] ~ i[data-index="3"],
+    .rating-badge-value i[data-rating="5"] ~ i[data-index="4"] {
+        opacity: 1;
+    }
+
     .review-header {
         display: flex;
         justify-content: space-between;
