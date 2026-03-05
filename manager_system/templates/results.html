@@ -389,24 +389,37 @@
     }
 
     .rating-badge-value {
-        padding: 0.5rem 1rem !important;
-        border-radius: 0.5rem !important;
-        font-weight: 600 !important;
+        padding: 0.75rem 1.25rem !important;
+        border-radius: 0.75rem !important;
+        font-weight: 700 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .rating-badge-value:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     }
 
     .rating-badge-value.rating-red {
-        background: #fee2e2 !important;
-        color: #ef4444 !important;
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+        color: #dc2626 !important;
+        border: 1px solid #fca5a5 !important;
     }
 
     .rating-badge-value.rating-yellow {
-        background: #fef3c7 !important;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
         color: #d97706 !important;
+        border: 1px solid #fcd34d !important;
     }
 
     .rating-badge-value.rating-green {
-        background: #dcfce7 !important;
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;
         color: #15803d !important;
+        border: 1px solid #86efac !important;
     }
 
     .review-header {
@@ -617,7 +630,12 @@
                 </div>
                 {% set avg_rating_val = visualizations.kpi_metrics.avg_rating|float %}
                 {% set avg_rating_class = 'rating-red' if avg_rating_val < 2.5 else 'rating-yellow' if avg_rating_val < 3.7 else 'rating-green' %}
-                <h3><span class="rating-badge-value {{ avg_rating_class }}">{{ visualizations.kpi_metrics.avg_rating }}</span></h3>
+                <h3><span class="rating-badge-value {{ avg_rating_class }}">
+                  {% for i in range(5) %}
+                    <i class="fas fa-star" data-rating="{{ avg_rating_val|int }}" data-index="{{ i }}"></i>
+                  {% endfor %}
+                  <span style="font-size: 1.1rem; font-weight: 800;">{{ "%.1f"|format(avg_rating_val) }}</span>
+                </span></h3>
                 <p>Average Rating</p>
             </div>
 
