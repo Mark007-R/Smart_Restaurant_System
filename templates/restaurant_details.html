@@ -159,12 +159,49 @@
     gap: 0.5rem;
     color: #f59e0b;
     font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(245, 158, 11, 0.15);
   }
 
-  .review-text {
-    color: #cbd5e1;
-    line-height: 1.6;
+  .review-rating.rating-red {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
   }
+
+  .review-rating.rating-yellow {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .review-rating.rating-green {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+  }
+
+  .rating-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  .rating-badge.rating-red {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  .rating-badge.rating-yellow {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .rating-badge.rating-green {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+  }
+
+  
 
   .menu-grid {
     display: grid;
@@ -305,9 +342,11 @@
     <h1 class="restaurant-title">{{ restaurant.name }}</h1>
     <div class="restaurant-meta">
       {% if restaurant.rating and restaurant.rating != 'N/A' %}
+      {% set rating_val = restaurant.rating|float %}
+      {% set rating_class = 'rating-red' if rating_val < 2.5 else 'rating-yellow' if rating_val < 3.7 else 'rating-green' %}
       <div class="meta-item">
         <i class="fas fa-star" style="color: #f59e0b;"></i>
-        <span>{{ restaurant.rating }} Rating</span>
+        <span class="rating-badge {{ rating_class }}">{{ restaurant.rating }} Rating</span>
       </div>
       {% endif %}
       {% if restaurant.cuisines %}
@@ -384,17 +423,19 @@
         <div class="review-header">
           <span style="color: #cbd5e1; font-weight: 600;">{{ review.reviewer or 'Anonymous' }}</span>
           {% if review.rating %}
-          <div class="review-rating">
-            {% for i in range(5) %}
-              {% if i < review.rating|int %}
-              <i class="fas fa-star"></i>
-              {% else %}
-              <i class="far fa-star"></i>
-              {% endif %}
-            {% endfor %}
-            <span>({{ review.rating }})</span>
-          </div>
-          {% endif %}
+        {% set rating_val = review.rating|float %}
+        {% set rating_class = 'rating-red' if rating_val < 2.5 else 'rating-yellow' if rating_val < 3.7 else 'rating-green' %}
+        <div class="review-rating {{ rating_class }}">
+          {% for i in range(5) %}
+            {% if i < review.rating|int %}
+            <i class="fas fa-star"></i>
+            {% else %}
+            <i class="far fa-star"></i>
+            {% endif %}
+          {% endfor %}
+          <span>({{ review.rating }})</span>
+        </div>
+        {% endif %}
         </div>
         <p class="review-text">{{ review.text[:300] }}{% if review.text|length > 300 %}...{% endif %}</p>
         <small style="color: #64748b;">{{ review.created_at.strftime('%B %d, %Y') if review.created_at else 'Recently' }}</small>

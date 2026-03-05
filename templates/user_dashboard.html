@@ -168,6 +168,24 @@
     color: #f59e0b;
     font-weight: 600;
     margin-bottom: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    width: fit-content;
+  }
+
+  .restaurant-rating.rating-red {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+
+  .restaurant-rating.rating-yellow {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .restaurant-rating.rating-green {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
   }
 
   .restaurant-info {
@@ -335,7 +353,9 @@
       <div class="restaurant-name">{{ restaurant.name }}</div>
 
       {% if restaurant.rating and restaurant.rating != 'N/A' %}
-      <div class="restaurant-rating">
+      {% set rating_val = restaurant.rating|float %}
+      {% set rating_class = 'rating-red' if rating_val < 2.5 else 'rating-yellow' if rating_val < 3.7 else 'rating-green' %}
+      <div class="restaurant-rating {{ rating_class }}">
         <i class="fas fa-star"></i>
         {{ restaurant.rating }}
       </div>
